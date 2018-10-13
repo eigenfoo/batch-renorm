@@ -14,3 +14,8 @@ Assuming you have Tensorflow 1.0 installed, no more setup should be required.
 Running `sh verify-tf-slim.sh` should return no errors.  If not, follow [these
 instructions](https://github.com/tensorflow/models/tree/master/research/slim#installation)
 to install both Tensorflow-Slim and its image models library.
+
+## Download Data
+
+Running `sh download-data.sh` should download and process the CIFAR-10 dataset.
+This may take several minutes.
