@@ -146,7 +146,7 @@ def InceptionV3(include_top=True,
     input_shape = _obtain_input_shape(
         input_shape,
         default_size=299,
-        min_size=75,
+        min_size=32,
         data_format=backend.image_data_format(),
         require_flatten=include_top,
         weights=weights)
