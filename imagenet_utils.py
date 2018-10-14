@@ -1,4 +1,10 @@
 """Utilities for ImageNet data preprocessing & prediction decoding.
+
+# Source
+
+Modified from keras-applications (the applications module of Keras):
+https://github.com/keras-team/keras-applications/blob/9de35e40e6bf85d830a599cc659133f0e3623a50/keras_applications/imagenet_utils.py
+
 """
 from __future__ import absolute_import
 from __future__ import division

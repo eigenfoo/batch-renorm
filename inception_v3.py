@@ -9,6 +9,11 @@ and that the input preprocessing function is also different (same as Xception).
 - [Rethinking the Inception Architecture for Computer Vision](
     http://arxiv.org/abs/1512.00567)
 
+# Source
+
+Modified from keras-applications (the applications module of Keras):
+https://github.com/keras-team/keras-applications/blob/13f75fa3640098b26db8eb732f39b891481795a5/keras_applications/inception_v3.py
+
 """
 from __future__ import absolute_import
 from __future__ import division
