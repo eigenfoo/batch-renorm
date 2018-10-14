@@ -20,9 +20,6 @@ from __future__ import division
 from __future__ import print_function
 
 import os
-
-from imagenet_utils import preprocess_input
-from imagenet_utils import decode_predictions
 from imagenet_utils import _obtain_input_shape
 import tensorflow as tf
 
@@ -394,15 +391,3 @@ def InceptionV3(include_top=True,
         model.load_weights(weights)
 
     return model
-
-
-def preprocess_input(x, **kwargs):
-    """Preprocesses a numpy array encoding a batch of images.
-
-    # Arguments
-        x: a 4D numpy array consists of RGB values within [0, 255].
-
-    # Returns
-        Preprocessed array.
-    """
-    return preprocess_input(x, mode='tf', **kwargs)
