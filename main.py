@@ -16,12 +16,12 @@ NUM_CHANNELS = 3
 class AccuracyHistory(keras.callbacks.Callback):
     ''' Class for Keras callbacks. '''
     def on_train_begin(self, logs={}):
-        self.accuracy = []
-        self.topk_accuracy = []
+        self.acc = []
+        self.topk_acc = []
 
     def on_batch_end(self, batch, logs={}):
-        self.accuracy.append(logs.get('accuracy'))
-        self.topk_accuracy.append(logs.get('top_k_categorical_accuracy'))
+        self.acc.append(logs.get('acc'))
+        self.topk_acc.append(logs.get('top_k_categorical_accuracy'))
 
 
 # Load data and split into train, val, test sets
@@ -58,14 +58,7 @@ model.fit(x_train, y_train,
           validation_data=[x_val, y_val],
           callbacks=[history])
 
-# TODO check to see if the callbacks work
-# TODO actually plot the accuracy graphs
-import pdb; pdb.set_trace()
-
-'''
-with open('accuracies.pkl', 'wb') as f:
-    pickle.dump(history.accuracies, f)
-'''
+# TODO save history!
 
 loss, acc, topk_acc = model.evaluate(x_test, y_test, verbose=1)
 
