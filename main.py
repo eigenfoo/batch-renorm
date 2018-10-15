@@ -1,7 +1,7 @@
 from inception_v3 import InceptionV3
+import pandas as pd
 import tensorflow as tf
 from tensorflow import keras
-from tensorflow.keras.callbacks import LambdaCallback
 from tensorflow.keras.datasets.cifar10 import load_data
 
 BATCH_SIZE = 32  # As specified in paper
@@ -58,7 +58,9 @@ model.fit(x_train, y_train,
           validation_data=[x_val, y_val],
           callbacks=[history])
 
-# TODO save history!
+# Save accuracy and top k accuracy.
+pd.Series(data=history.acc).to_csv('acc.csv')
+# pd.Series(data=history.topk_acc).to_csv('topk_acc.csv')
 
 loss, acc, topk_acc = model.evaluate(x_test, y_test, verbose=1)
 
