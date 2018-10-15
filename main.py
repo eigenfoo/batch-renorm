@@ -67,7 +67,8 @@ with open('accuracies.pkl', 'wb') as f:
     pickle.dump(history.accuracies, f)
 '''
 
-loss, acc = model.evaluate(x_test, y_test, verbose=1)
+loss, acc, topk_acc = model.evaluate(x_test, y_test, verbose=1)
 
 print('Test loss:', loss)
 print('Test accuracy:', acc)
+print('Test top k accuracy:', topk_acc)
