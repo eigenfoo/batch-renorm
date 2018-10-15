@@ -39,7 +39,7 @@ y_train, y_val, y_test = \
 
 # Instantiate, compile and train Inception-v3 model
 model = InceptionV3(
-    include_top=False,  # Don't include dense layer at the top of the network
+    include_top=True,
     weights=None,  # Random initialization
     input_shape=[HEIGHT, WIDTH, NUM_CHANNELS],
     pooling='avg',  # Global average pooling on output of the last conv layer
