@@ -4,7 +4,10 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras.datasets.cifar10 import load_data
 
-BATCH_SIZE = 32  # As specified in paper
+# As specified in paper
+GHOST_SIZE = 32
+NUM_GHOSTS = 50
+BATCH_SIZE = GHOST_SIZE * NUM_GHOSTS
 NUM_EPOCHS = 1
 
 NUM_CLASSES = 10
