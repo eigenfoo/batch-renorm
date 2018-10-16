@@ -44,6 +44,9 @@ def conv2d_bn(x,
               num_col,
               padding='same',
               strides=(1, 1),
+              renorm=False,
+              microbatch_size=32,
+              num_microbatches=50,
               name=None):
     """Utility function to apply conv + BN.
 
@@ -54,6 +57,9 @@ def conv2d_bn(x,
         num_col: width of the convolution kernel.
         padding: padding mode in `Conv2D`.
         strides: strides in `Conv2D`.
+        renorm: if True, apply batch renorm instead of batch norm.
+        microbatch_size: number of examples in one microbatch.
+        num_microbatches: number of microbatches in one minibatch.
         name: name of the ops; will become `name + '_conv'`
             for the convolution and `name + '_bn'` for the
             batch norm layer.
@@ -77,7 +83,20 @@ def conv2d_bn(x,
         padding=padding,
         use_bias=False,
         name=conv_name)(x)
-    x = layers.BatchNormalization(axis=bn_axis, scale=False, name=bn_name)(x)
+
+    if not renorm:
+        # Technically, microbatch batch normalization calls for updating gradient's
+        # moments sequentially from microbatch batch to microbatch batch. However, the
+        # Tensorflow implementation does _not_ do this, instead averaging over
+        # the moments. This is exactly what we need. See
+        # https://github.com/tensorflow/tensorflow/blob/c19e29306ce1777456b2dbb3a14f511edf7883a8/tensorflow/python/keras/layers/normalization.py#L581-L585
+        x = layers.BatchNormalization(axis=bn_axis, scale=False,
+                                      virtual_batch_size=microbatch_size,
+                                      name=bn_name)(x)
+    else:
+        # TODO(andrey) implement batch renorm with a tf.keras.layers interface
+        pass
+
     x = layers.Activation('relu', name=name)(x)
     return x
 
@@ -88,6 +107,9 @@ def InceptionV3(include_top=True,
                 input_shape=None,
                 pooling=None,
                 classes=1000,
+                renorm=False,
+                microbatch_size=32,
+                num_microbatches=50,
                 **kwargs):
     """Instantiates the Inception v3 architecture.
 
@@ -124,6 +146,9 @@ def InceptionV3(include_top=True,
         classes: optional number of classes to classify images
             into, only to be specified if `include_top` is True, and
             if no `weights` argument is specified.
+        renorm: if True, apply batch renorm instead of batch norm.
+        microbatch_size: number of examples in one microbatch.
+        num_microbatches: number of microbatches in one minibatch.
 
     # Returns
         A Keras model instance.
@@ -164,67 +189,119 @@ def InceptionV3(include_top=True,
     else:
         channel_axis = 3
 
-    x = conv2d_bn(img_input, 32, 3, 3, strides=(2, 2), padding='valid')
-    x = conv2d_bn(x, 32, 3, 3, padding='valid')
-    x = conv2d_bn(x, 64, 3, 3)
+    x = conv2d_bn(img_input, 32, 3, 3, strides=(2, 2), padding='valid',
+                  renorm=renorm, microbatch_size=microbatch_size,
+                  num_microbatches=num_microbatches)
+    x = conv2d_bn(x, 32, 3, 3, padding='valid',
+                  renorm=renorm, microbatch_size=microbatch_size,
+                  num_microbatches=num_microbatches)
+    x = conv2d_bn(x, 64, 3, 3,
+                  renorm=renorm, microbatch_size=microbatch_size,
+                  num_microbatches=num_microbatches)
     x = layers.MaxPooling2D((3, 3), strides=(2, 2))(x)
 
-    x = conv2d_bn(x, 80, 1, 1, padding='valid')
-    x = conv2d_bn(x, 192, 3, 3, padding='valid')
+    x = conv2d_bn(x, 80, 1, 1, padding='valid',
+                  renorm=renorm, microbatch_size=microbatch_size,
+                  num_microbatches=num_microbatches)
+    x = conv2d_bn(x, 192, 3, 3, padding='valid',
+                  renorm=renorm, microbatch_size=microbatch_size,
+                  num_microbatches=num_microbatches)
     x = layers.MaxPooling2D((3, 3), strides=(2, 2))(x)
 
     # mixed 0: 35 x 35 x 256
-    branch1x1 = conv2d_bn(x, 64, 1, 1)
+    branch1x1 = conv2d_bn(x, 64, 1, 1, renorm=renorm,
+                          microbatch_size=microbatch_size,
+                          num_microbatches=num_microbatches)
 
-    branch5x5 = conv2d_bn(x, 48, 1, 1)
-    branch5x5 = conv2d_bn(branch5x5, 64, 5, 5)
+    branch5x5 = conv2d_bn(x, 48, 1, 1, renorm=renorm,
+                          microbatch_size=microbatch_size,
+                          num_microbatches=num_microbatches)
+    branch5x5 = conv2d_bn(branch5x5, 64, 5, 5, renorm=renorm,
+                          microbatch_size=microbatch_size,
+                          num_microbatches=num_microbatches)
 
-    branch3x3dbl = conv2d_bn(x, 64, 1, 1)
-    branch3x3dbl = conv2d_bn(branch3x3dbl, 96, 3, 3)
-    branch3x3dbl = conv2d_bn(branch3x3dbl, 96, 3, 3)
+    branch3x3dbl = conv2d_bn(x, 64, 1, 1, renorm=renorm,
+                             microbatch_size=microbatch_size,
+                             num_microbatches=num_microbatches)
+    branch3x3dbl = conv2d_bn(branch3x3dbl, 96, 3, 3, renorm=renorm,
+                             microbatch_size=microbatch_size,
+                             num_microbatches=num_microbatches)
+    branch3x3dbl = conv2d_bn(branch3x3dbl, 96, 3, 3, renorm=renorm,
+                             microbatch_size=microbatch_size,
+                             num_microbatches=num_microbatches)
 
     branch_pool = layers.AveragePooling2D((3, 3),
                                           strides=(1, 1),
                                           padding='same')(x)
-    branch_pool = conv2d_bn(branch_pool, 32, 1, 1)
+    branch_pool = conv2d_bn(branch_pool, 32, 1, 1, renorm=renorm,
+                            microbatch_size=microbatch_size,
+                            num_microbatches=num_microbatches)
     x = layers.concatenate(
         [branch1x1, branch5x5, branch3x3dbl, branch_pool],
         axis=channel_axis,
         name='mixed0')
 
     # mixed 1: 35 x 35 x 288
-    branch1x1 = conv2d_bn(x, 64, 1, 1)
+    branch1x1 = conv2d_bn(x, 64, 1, 1, renorm=renorm,
+                          microbatch_size=microbatch_size,
+                          num_microbatches=num_microbatches)
 
-    branch5x5 = conv2d_bn(x, 48, 1, 1)
-    branch5x5 = conv2d_bn(branch5x5, 64, 5, 5)
+    branch5x5 = conv2d_bn(x, 48, 1, 1, renorm=renorm,
+                          microbatch_size=microbatch_size,
+                          num_microbatches=num_microbatches)
+    branch5x5 = conv2d_bn(branch5x5, 64, 5, 5, renorm=renorm,
+                          microbatch_size=microbatch_size,
+                          num_microbatches=num_microbatches)
 
-    branch3x3dbl = conv2d_bn(x, 64, 1, 1)
-    branch3x3dbl = conv2d_bn(branch3x3dbl, 96, 3, 3)
-    branch3x3dbl = conv2d_bn(branch3x3dbl, 96, 3, 3)
+    branch3x3dbl = conv2d_bn(x, 64, 1, 1, renorm=renorm,
+                             microbatch_size=microbatch_size,
+                             num_microbatches=num_microbatches)
+    branch3x3dbl = conv2d_bn(branch3x3dbl, 96, 3, 3, renorm=renorm,
+                             microbatch_size=microbatch_size,
+                             num_microbatches=num_microbatches)
+    branch3x3dbl = conv2d_bn(branch3x3dbl, 96, 3, 3, renorm=renorm,
+                             microbatch_size=microbatch_size,
+                             num_microbatches=num_microbatches)
 
     branch_pool = layers.AveragePooling2D((3, 3),
                                           strides=(1, 1),
                                           padding='same')(x)
-    branch_pool = conv2d_bn(branch_pool, 64, 1, 1)
+    branch_pool = conv2d_bn(branch_pool, 64, 1, 1, renorm=renorm,
+                            microbatch_size=microbatch_size,
+                            num_microbatches=num_microbatches)
     x = layers.concatenate(
         [branch1x1, branch5x5, branch3x3dbl, branch_pool],
         axis=channel_axis,
         name='mixed1')
 
     # mixed 2: 35 x 35 x 288
-    branch1x1 = conv2d_bn(x, 64, 1, 1)
+    branch1x1 = conv2d_bn(x, 64, 1, 1, renorm=renorm,
+                          microbatch_size=microbatch_size,
+                          num_microbatches=num_microbatches)
 
-    branch5x5 = conv2d_bn(x, 48, 1, 1)
-    branch5x5 = conv2d_bn(branch5x5, 64, 5, 5)
+    branch5x5 = conv2d_bn(x, 48, 1, 1, renorm=renorm,
+                          microbatch_size=microbatch_size,
+                          num_microbatches=num_microbatches)
+    branch5x5 = conv2d_bn(branch5x5, 64, 5, 5, renorm=renorm,
+                          microbatch_size=microbatch_size,
+                          num_microbatches=num_microbatches)
 
-    branch3x3dbl = conv2d_bn(x, 64, 1, 1)
-    branch3x3dbl = conv2d_bn(branch3x3dbl, 96, 3, 3)
-    branch3x3dbl = conv2d_bn(branch3x3dbl, 96, 3, 3)
+    branch3x3dbl = conv2d_bn(x, 64, 1, 1, renorm=renorm,
+                             microbatch_size=microbatch_size,
+                             num_microbatches=num_microbatches)
+    branch3x3dbl = conv2d_bn(branch3x3dbl, 96, 3, 3, renorm=renorm,
+                             microbatch_size=microbatch_size,
+                             num_microbatches=num_microbatches)
+    branch3x3dbl = conv2d_bn(branch3x3dbl, 96, 3, 3, renorm=renorm,
+                             microbatch_size=microbatch_size,
+                             num_microbatches=num_microbatches)
 
     branch_pool = layers.AveragePooling2D((3, 3),
                                           strides=(1, 1),
                                           padding='same')(x)
-    branch_pool = conv2d_bn(branch_pool, 64, 1, 1)
+    branch_pool = conv2d_bn(branch_pool, 64, 1, 1, renorm=renorm,
+                            microbatch_size=microbatch_size,
+                            num_microbatches=num_microbatches)
     x = layers.concatenate(
         [branch1x1, branch5x5, branch3x3dbl, branch_pool],
         axis=channel_axis,

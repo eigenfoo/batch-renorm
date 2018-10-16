@@ -4,7 +4,10 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras.datasets.cifar10 import load_data
 
-BATCH_SIZE = 32  # As specified in paper
+# As specified in paper
+MICROBATCH_SIZE = 32
+NUM_MICROBATCHES = 50
+BATCH_SIZE = MICROBATCH_SIZE * NUM_MICROBATCHES
 NUM_EPOCHS = 1
 
 NUM_CLASSES = 10
@@ -29,6 +32,15 @@ class AccuracyHistory(keras.callbacks.Callback):
 (x_val, y_val), (x_test, y_test) = \
             (x_test[:5000], y_test[:5000]), (x_test[5000:], y_test[5000:])
 
+# FIXME this is an ugly hack to make sure all data has a multiple of 1600 of
+# examples...
+x_train = x_train[:49600]
+y_train = y_train[:49600]
+x_val = x_val[:4800]
+y_val = y_val[:4800]
+x_test = x_test[:4800]
+y_test = y_test[:4800]
+
 # Normalize and reshape data and labels
 x_train, x_val, x_test = \
     map(lambda x: (x / 255.0).reshape([-1, HEIGHT, WIDTH, NUM_CHANNELS]),
@@ -43,7 +55,10 @@ model = InceptionV3(
     weights=None,  # Random initialization
     input_shape=[HEIGHT, WIDTH, NUM_CHANNELS],
     pooling='avg',  # Global average pooling on output of the last conv layer
-    classes=NUM_CLASSES
+    classes=NUM_CLASSES,
+    renorm=False,
+    microbatch_size=MICROBATCH_SIZE,
+    num_microbatches=NUM_MICROBATCHES
 )
 
 model.compile(loss=keras.losses.categorical_crossentropy,
