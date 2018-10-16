@@ -5,7 +5,11 @@ Ioffe.
 
 The goal of this project is to reproduce the following figure from the paper:
 
-![Figure 2 from paper](https://raw.githubusercontent.com/eigenfoo/batch-renorm/master/docs/paper-figure.png =1060x1200)
+<figure>
+    <a href="https://raw.githubusercontent.com/eigenfoo/batch-renorm/master/docs/paper-figure.png">
+    <img style="float: middle" src="https://raw.githubusercontent.com/eigenfoo/batch-renorm/master/docs/paper-figure.png">
+    </a>
+</figure>
 
 ## Citations
 
