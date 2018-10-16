@@ -71,9 +71,10 @@ model.fit(x_train, y_train,
           validation_data=[x_val, y_val],
           callbacks=[history])
 
-# Save accuracy and top k accuracy.
-pd.Series(data=history.acc).to_csv('acc.csv')
-# pd.Series(data=history.topk_acc).to_csv('topk_acc.csv')
+# Save accuracy.
+s = pd.Series(data=history.acc)
+s.index *= x_train.shape[0] // BATCH_SIZE  # Number of updates in one epoch
+s.to_csv('acc.csv')
 
 loss, acc = model.evaluate(x_test, y_test, verbose=1)
 
