@@ -8,7 +8,7 @@ from tensorflow.keras.datasets.cifar10 import load_data
 GHOST_SIZE = 32
 NUM_GHOSTS = 50
 BATCH_SIZE = GHOST_SIZE * NUM_GHOSTS
-NUM_EPOCHS = 1
+NUM_EPOCHS = 50
 
 NUM_CLASSES = 10
 HEIGHT = 32
@@ -31,6 +31,15 @@ class AccuracyHistory(keras.callbacks.Callback):
 (x_train, y_train), (x_test, y_test) = load_data()
 (x_val, y_val), (x_test, y_test) = \
             (x_test[:5000], y_test[:5000]), (x_test[5000:], y_test[5000:])
+
+# FIXME this is an ugly hack to make sure all data has a multiple of 1600 of
+# examples...
+x_train = x_train[:49600]
+y_train = y_train[:49600]
+x_val = x_val[:4800]
+y_val = y_val[:4800]
+x_test = x_test[:4800]
+y_test = y_test[:4800]
 
 # Normalize and reshape data and labels
 x_train, x_val, x_test = \
