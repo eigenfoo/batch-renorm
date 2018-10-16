@@ -146,7 +146,7 @@ def InceptionV3(include_top=True,
     input_shape = _obtain_input_shape(
         input_shape,
         default_size=299,
-        min_size=75,
+        min_size=32,
         data_format=backend.image_data_format(),
         require_flatten=include_top,
         weights=weights)
@@ -230,6 +230,7 @@ def InceptionV3(include_top=True,
         axis=channel_axis,
         name='mixed2')
 
+    '''
     # mixed 3: 17 x 17 x 768
     branch3x3 = conv2d_bn(x, 384, 3, 3, strides=(2, 2), padding='valid')
 
@@ -353,6 +354,8 @@ def InceptionV3(include_top=True,
             [branch1x1, branch3x3, branch3x3dbl, branch_pool],
             axis=channel_axis,
             name='mixed' + str(9 + i))
+    '''
+
     if include_top:
         # Classification block
         x = layers.GlobalAveragePooling2D(name='avg_pool')(x)
