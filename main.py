@@ -46,7 +46,10 @@ model = InceptionV3(
     weights=None,  # Random initialization
     input_shape=[HEIGHT, WIDTH, NUM_CHANNELS],
     pooling='avg',  # Global average pooling on output of the last conv layer
-    classes=NUM_CLASSES
+    classes=NUM_CLASSES,
+    renorm=False,
+    ghost_size=GHOST_SIZE,
+    num_ghosts=NUM_GHOSTS
 )
 
 model.compile(loss=keras.losses.categorical_crossentropy,
