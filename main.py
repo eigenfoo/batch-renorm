@@ -8,7 +8,7 @@ from tensorflow.keras.datasets.cifar10 import load_data
 MICROBATCH_SIZE = 32
 NUM_MICROBATCHES = 50
 BATCH_SIZE = MICROBATCH_SIZE * NUM_MICROBATCHES
-NUM_EPOCHS = 1
+NUM_EPOCHS = 20
 
 NUM_CLASSES = 10
 HEIGHT = 32
@@ -22,9 +22,9 @@ class AccuracyHistory(keras.callbacks.Callback):
         self.acc = []
         self.topk_acc = []
 
-    def on_batch_end(self, batch, logs={}):
-        self.acc.append(logs.get('acc'))
-        self.topk_acc.append(logs.get('top_k_categorical_accuracy'))
+    def on_epoch_end(self, batch, logs={}):
+        self.acc.append(logs.get('val_acc'))
+        self.topk_acc.append(logs.get('val_top_k_categorical_accuracy'))
 
 
 # Load data and split into train, val, test sets
@@ -62,7 +62,7 @@ model = InceptionV3(
 )
 
 model.compile(loss=keras.losses.categorical_crossentropy,
-              optimizer=keras.optimizers.Adam(),
+              optimizer=keras.optimizers.RMSprop(),
               metrics=['accuracy', 'top_k_categorical_accuracy'])
 
 history = AccuracyHistory()
