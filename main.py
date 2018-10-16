@@ -20,11 +20,9 @@ class AccuracyHistory(keras.callbacks.Callback):
     ''' Class for Keras callbacks. '''
     def on_train_begin(self, logs={}):
         self.acc = []
-        self.topk_acc = []
 
     def on_epoch_end(self, batch, logs={}):
         self.acc.append(logs.get('val_acc'))
-        self.topk_acc.append(logs.get('val_top_k_categorical_accuracy'))
 
 
 # Load data and split into train, val, test sets
@@ -63,7 +61,7 @@ model = InceptionV3(
 
 model.compile(loss=keras.losses.categorical_crossentropy,
               optimizer=keras.optimizers.RMSprop(),
-              metrics=['accuracy', 'top_k_categorical_accuracy'])
+              metrics=['accuracy'])
 
 history = AccuracyHistory()
 model.fit(x_train, y_train,
@@ -77,8 +75,7 @@ model.fit(x_train, y_train,
 pd.Series(data=history.acc).to_csv('acc.csv')
 # pd.Series(data=history.topk_acc).to_csv('topk_acc.csv')
 
-loss, acc, topk_acc = model.evaluate(x_test, y_test, verbose=1)
+loss, acc = model.evaluate(x_test, y_test, verbose=1)
 
 print('Test loss:', loss)
 print('Test accuracy:', acc)
-print('Test top k accuracy:', topk_acc)
