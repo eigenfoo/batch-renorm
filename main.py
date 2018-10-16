@@ -5,10 +5,10 @@ from tensorflow import keras
 from tensorflow.keras.datasets.cifar10 import load_data
 
 # As specified in paper
-GHOST_SIZE = 32
-NUM_GHOSTS = 50
-BATCH_SIZE = GHOST_SIZE * NUM_GHOSTS
-NUM_EPOCHS = 50
+MICROBATCH_SIZE = 32
+NUM_MICROBATCHES = 50
+BATCH_SIZE = MICROBATCH_SIZE * NUM_MICROBATCHES
+NUM_EPOCHS = 1
 
 NUM_CLASSES = 10
 HEIGHT = 32
@@ -57,8 +57,8 @@ model = InceptionV3(
     pooling='avg',  # Global average pooling on output of the last conv layer
     classes=NUM_CLASSES,
     renorm=False,
-    ghost_size=GHOST_SIZE,
-    num_ghosts=NUM_GHOSTS
+    microbatch_size=MICROBATCH_SIZE,
+    num_microbatches=NUM_MICROBATCHES
 )
 
 model.compile(loss=keras.losses.categorical_crossentropy,
