@@ -85,10 +85,10 @@ def conv2d_bn(x,
         name=conv_name)(x)
 
     if not renorm:
-        # Technically, microbatch batch normalization calls for updating gradient's
-        # moments sequentially from microbatch batch to microbatch batch. However, the
-        # Tensorflow implementation does _not_ do this, instead averaging over
-        # the moments. This is exactly what we need. See
+        # Technically, microbatch batch normalization calls for updating
+        # gradient's moments sequentially from microbatch batch to microbatch
+        # batch. However, the Tensorflow implementation does _not_ do this,
+        # instead averaging over the moments. This is exactly what we need. See
         # https://github.com/tensorflow/tensorflow/blob/c19e29306ce1777456b2dbb3a14f511edf7883a8/tensorflow/python/keras/layers/normalization.py#L581-L585
         x = layers.BatchNormalization(axis=bn_axis, scale=False,
                                       virtual_batch_size=microbatch_size,
