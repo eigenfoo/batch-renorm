@@ -2,6 +2,48 @@ import tensorflow as tf
 from tensorflow import layers
 
 
+def batch_norm(x, training, r_max, d_max, epsilon=0.0001, momentum=0.99):
+    '''
+    :param x: Input tensor. The zeroth dimension must be the batch dimension
+    :param training: A python boolean or a tf.bool tensor.
+    :return: The output tensor.
+    '''
+    channels = x.shape[-1]
+
+    with(tf.variable_scope(None, 'batch_norm')):
+        gamma = tf.get_variable("gamma", [channels], tf.float32, tf.ones_initializer)
+        beta = tf.get_variable("beta", [channels], tf.float32, tf.ones_initializer)
+        mu = tf.get_variable("mu", [channels], tf.float32, tf.zeros_initializer, trainable=False)
+        sigma = tf.get_variable("sigma", [channels], tf.float32, tf.zeros_initializer, trainable=True)
+        mu_old = tf.get_variable("mu_old", [channels], tf.float32, trainable=False)
+        sigma_old = tf.get_variable("sigma_old", [channels], tf.float32, trainable=False)
+        mu_b, sigma_b = tf.nn.moments(x, [0, 1, 2])
+
+        ### Train branch
+        def train_step(x, mu, sigma, mu_b, sigma_b, alpha):
+            mu_asgn_old = tf.assign(mu_old, mu)
+            sigma_asgn_old = tf.assign(sigma_old, sigma)
+
+            with(tf.control_dependencies([mu_asgn_old, sigma_asgn_old])):
+                mu_add = alpha * (mu_b - mu_old)
+                sigma_add = alpha * (sigma_b - sigma_old)
+
+                mu_asgn = tf.assign_add(mu, mu_add)
+                sigma_asgn = tf.assign_add(sigma, sigma_add)
+
+                with(tf.control_dependencies([mu_asgn, sigma_asgn])):
+                    r = tf.stop_gradient(tf.clip_by_value(sigma_b / sigma, 1 / r_max, r_max))
+                    d = tf.stop_gradient(tf.clip_by_value((mu_b - mu) / sigma, -d_max, d_max))
+                    x_hat = ((x - mu_b) / sigma_b) * r + d
+                    y = gamma * x_hat + beta
+
+            return y
+
+        result = tf.cond(training, lambda: train_step(x, mu, sigma, mu_b, sigma_b, momentum),
+                         lambda: gamma * ((x - mu) / sigma) + beta)
+        return result
+
+
 def conv2d_bn(x,
               filters,
               num_row,
@@ -217,7 +259,7 @@ def InceptionV3(images,
 
     loss = tf.losses.softmax_cross_entropy(labels, logits)
     train_step = (tf.train.RMSPropOptimizer(learning_rate=0.001)
-                          .minimize(loss))
+                  .minimize(loss))
 
     correct_prediction = tf.equal(tf.round(predictions), labels)
     accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
