@@ -1,85 +1,79 @@
-from inception_v3 import InceptionV3
+from foo import InceptionV3
+import numpy as np
 import pandas as pd
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras.datasets.cifar10 import load_data
+from tqdm import tqdm
 
 # As specified in paper
 MICROBATCH_SIZE = 32
 NUM_MICROBATCHES = 50
 BATCH_SIZE = MICROBATCH_SIZE * NUM_MICROBATCHES
-NUM_EPOCHS = 10
+NUM_EPOCHS = 3
 
 NUM_CLASSES = 10
 HEIGHT = 32
 WIDTH = 32
 NUM_CHANNELS = 3
 
-
-class AccuracyHistory(keras.callbacks.Callback):
-    ''' Class for Keras callbacks. '''
-    def on_train_begin(self, logs={}):
-        self.acc = []
-
-    def on_epoch_end(self, batch, logs={}):
-        self.acc.append(logs.get('val_acc'))
-
-
-# Load data and split into train, val, test sets
-(x_train, y_train), (x_test, y_test) = load_data()
-(x_val, y_val), (x_test, y_test) = \
-            (x_test[:5000], y_test[:5000]), (x_test[5000:], y_test[5000:])
+# Load data and split into train and val sets
+(x_train, y_train), (x_val, y_val) = load_data()
 
 # FIXME this is an ugly hack to make sure all data has a multiple of 1600 of
 # examples...
 x_train = x_train[:49600]
 y_train = y_train[:49600]
-x_val = x_val[:4800]
-y_val = y_val[:4800]
-x_test = x_test[:4800]
-y_test = y_test[:4800]
+#x_val = x_val[:9600]
+#y_val = y_val[:9600]
 
 # Normalize and reshape data and labels
-x_train, x_val, x_test = \
+x_train, x_val = \
     map(lambda x: (x / 255.0).reshape([-1, HEIGHT, WIDTH, NUM_CHANNELS]),
-        [x_train, x_val, x_test])
-y_train, y_val, y_test = \
+        [x_train, x_val])
+y_train, y_val = \
     map(lambda y: keras.utils.to_categorical(y, NUM_CLASSES),
-        [y_train, y_val, y_test])
+        [y_train, y_val])
 
-# Instantiate, compile and train Inception-v3 model
-model = InceptionV3(
-    include_top=True,
-    weights=None,  # Random initialization
-    input_shape=[HEIGHT, WIDTH, NUM_CHANNELS],
-    pooling='avg',  # Global average pooling on output of the last conv layer
+x_train_batches = np.split(x_train, x_train.shape[0] // BATCH_SIZE)
+y_train_batches = np.split(y_train, y_train.shape[0] // BATCH_SIZE)
+
+images = tf.placeholder(tf.float32, shape=[None, HEIGHT, WIDTH, NUM_CHANNELS])
+labels = tf.placeholder(tf.float32, shape=[None, NUM_CLASSES])
+training = tf.placeholder(bool, shape=[])
+
+# Make model
+predictions, loss, train_step, accuracy = InceptionV3(
+    images,
+    labels,
+    training,
     classes=NUM_CLASSES,
     renorm=False,
     microbatch_size=MICROBATCH_SIZE,
     num_microbatches=NUM_MICROBATCHES
 )
 
-model.compile(loss=keras.losses.categorical_crossentropy,
-              optimizer=keras.optimizers.RMSprop(),
-              metrics=['accuracy'])
+sess = tf.Session()
+sess.run(tf.global_variables_initializer())
+sess.run(tf.local_variables_initializer())
 
-history = AccuracyHistory()
-model.fit(x_train, y_train,
-          batch_size=BATCH_SIZE,
-          epochs=NUM_EPOCHS,
-          verbose=1,
-          validation_data=[x_val, y_val],
-          callbacks=[history])
+# Training
+for i in range(NUM_EPOCHS):
+    print('Epoch #{}: '.format(i))
+    for x_batch, y_batch in tqdm(zip(x_train_batches, y_train_batches)):
+        sess.run(train_step, feed_dict={images: x_batch,
+                                        labels: y_batch,
+                                        training: True})
+    loss_, acc_ = sess.run([loss, accuracy],
+                           feed_dict={images: x_batch,
+                                      labels: y_batch,
+                                      training: True})
 
-# Save accuracy.
-s = pd.Series(data=history.acc)
-s *= 100  # Convert to percentages
-s.index *= x_train.shape[0] // BATCH_SIZE  # Number of updates in one epoch
-s = s.rename('Accuracy (%)')
-s = s.rename_axis('Training steps')
-s.to_csv('acc.csv')
+    print('Train loss: {} - Train accuracy: {}'.format(loss_, acc_))
 
-loss, acc = model.evaluate(x_test, y_test, verbose=1)
-
-print('Test loss:', loss)
-print('Test accuracy:', acc)
+    # Validation
+    loss_, acc_ = sess.run([loss, accuracy],
+                           feed_dict={images: x_val,
+                                      labels: y_val,
+                                      training: False})
+    print('Validation loss: {} - Validation accuracy: {}'.format(loss_, acc_))
