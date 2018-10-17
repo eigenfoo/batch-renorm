@@ -10,34 +10,30 @@ from tqdm import tqdm
 MICROBATCH_SIZE = 32
 NUM_MICROBATCHES = 50
 BATCH_SIZE = MICROBATCH_SIZE * NUM_MICROBATCHES
-NUM_EPOCHS = 10
+NUM_EPOCHS = 3
 
 NUM_CLASSES = 10
 HEIGHT = 32
 WIDTH = 32
 NUM_CHANNELS = 3
 
-# Load data and split into train, val, test sets
-(x_train, y_train), (x_test, y_test) = load_data()
-(x_val, y_val), (x_test, y_test) = \
-            (x_test[:5000], y_test[:5000]), (x_test[5000:], y_test[5000:])
+# Load data and split into train and val sets
+(x_train, y_train), (x_val, y_val) = load_data()
 
 # FIXME this is an ugly hack to make sure all data has a multiple of 1600 of
 # examples...
 x_train = x_train[:49600]
 y_train = y_train[:49600]
-x_val = x_val[:4800]
-y_val = y_val[:4800]
-x_test = x_test[:4800]
-y_test = y_test[:4800]
+#x_val = x_val[:9600]
+#y_val = y_val[:9600]
 
 # Normalize and reshape data and labels
-x_train, x_val, x_test = \
+x_train, x_val = \
     map(lambda x: (x / 255.0).reshape([-1, HEIGHT, WIDTH, NUM_CHANNELS]),
-        [x_train, x_val, x_test])
-y_train, y_val, y_test = \
+        [x_train, x_val])
+y_train, y_val = \
     map(lambda y: keras.utils.to_categorical(y, NUM_CLASSES),
-        [y_train, y_val, y_test])
+        [y_train, y_val])
 
 x_train_batches = np.split(x_train, x_train.shape[0] // BATCH_SIZE)
 y_train_batches = np.split(y_train, y_train.shape[0] // BATCH_SIZE)
@@ -74,6 +70,10 @@ for i in range(NUM_EPOCHS):
                                       training: True})
 
     print('Train loss: {} - Train accuracy: {}'.format(loss_, acc_))
-    # TODO Val
 
-# TODO Test
+    # Validation
+    loss_, acc_ = sess.run([loss, accuracy],
+                           feed_dict={images: x_val,
+                                      labels: y_val,
+                                      training: False})
+    print('Validation loss: {} - Validation accuracy: {}'.format(loss_, acc_))
