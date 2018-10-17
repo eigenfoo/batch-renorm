@@ -1,6 +1,5 @@
-from foo import InceptionV3
+from inception_v3 import InceptionV3
 import numpy as np
-import pandas as pd
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras.datasets.cifar10 import load_data
