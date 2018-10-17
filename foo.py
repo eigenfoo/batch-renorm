@@ -218,6 +218,8 @@ def InceptionV3(images,
     loss = tf.losses.softmax_cross_entropy(labels, logits)
     train_step = (tf.train.RMSPropOptimizer(learning_rate=0.001)
                           .minimize(loss))
-    accuracy = tf.metrics.accuracy(labels, predictions, name='accuracy')
 
-    return loss, train_step, accuracy
+    correct_prediction = tf.equal(tf.round(predictions), labels)
+    accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+
+    return predictions, loss, train_step, accuracy

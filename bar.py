@@ -4,12 +4,13 @@ import pandas as pd
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras.datasets.cifar10 import load_data
+from tqdm import tqdm
 
 # As specified in paper
 MICROBATCH_SIZE = 32
 NUM_MICROBATCHES = 50
 BATCH_SIZE = MICROBATCH_SIZE * NUM_MICROBATCHES
-NUM_EPOCHS = 1
+NUM_EPOCHS = 10
 
 NUM_CLASSES = 10
 HEIGHT = 32
@@ -46,7 +47,7 @@ labels = tf.placeholder(tf.float32, shape=[None, NUM_CLASSES])
 training = tf.placeholder(bool, shape=[])
 
 # Make model
-loss, train_step, accuracy = InceptionV3(
+predictions, loss, train_step, accuracy = InceptionV3(
     images,
     labels,
     training,
@@ -58,12 +59,21 @@ loss, train_step, accuracy = InceptionV3(
 
 sess = tf.Session()
 sess.run(tf.global_variables_initializer())
+sess.run(tf.local_variables_initializer())
+
+# Training
 for i in range(NUM_EPOCHS):
     print('Epoch #{}: '.format(i))
-    for x_batch, y_batch in zip(x_train_batches, y_train_batches):
+    for x_batch, y_batch in tqdm(zip(x_train_batches, y_train_batches)):
         sess.run(train_step, feed_dict={images: x_batch,
                                         labels: y_batch,
                                         training: True})
     loss_, acc_ = sess.run([loss, accuracy],
-                           feed_dict={x: data_batch, y: label_batch})
-    print('Loss: {:0.3f} - Accuracy: {0.3f}'.format(loss_, acc_))
+                           feed_dict={images: x_batch,
+                                      labels: y_batch,
+                                      training: True})
+
+    print('Train loss: {} - Train accuracy: {}'.format(loss_, acc_))
+    # TODO Val
+
+# TODO Test
