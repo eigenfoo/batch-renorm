@@ -28,7 +28,7 @@ from tensorflow import layers
 
 from tensorflow.python import debug as tf_debug
 
-def batch_norm(x, training, r_max, d_max, epsilon=0.0001, momentum=0.99):
+def batch_norm(x, training, r_max, d_max, momentum=0.99, epsilon=0.0001):
     '''
     :param x: Input tensor. The zeroth dimension must be the batch dimension
     :param training: A python boolean or a tf.bool tensor.
@@ -43,34 +43,41 @@ def batch_norm(x, training, r_max, d_max, epsilon=0.0001, momentum=0.99):
         mu = tf.get_variable("mu", [channels], tf.float32, tf.zeros_initializer, trainable=False)
         sigma = tf.get_variable("sigma", [channels], tf.float32, tf.ones_initializer, trainable=True)
 
-        mu_old = tf.get_variable("mu_old", [channels], tf.float32, trainable=False, initializer=None)
-        sigma_old = tf.get_variable("sigma_old", [channels], tf.float32, trainable=False, initializer=None)
+        mu_old = tf.get_variable("mu_old", [channels], tf.float32, trainable=False, initializer=tf.zeros_initializer)
+        sigma_old = tf.get_variable("sigma_old", [channels], tf.float32, trainable=False, initializer=tf.ones_initializer)
 
-        mu_b, sigma_sq_b = tf.nn.moments(x, [0, 1, 2])
-        sigma_b = tf.sqrt(sigma_sq_b)
-
-        ### Train branch
-        def train_step(x, mu, sigma, mu_b, sigma_b, alpha):
+        # Train branch
+        def train_step(x, mu, sigma, alpha):
             with(tf.variable_scope('train_branch')):
-                mu_asgn_old = tf.assign(mu_old, mu)
-                sigma_asgn_old = tf.assign(sigma_old, sigma)
+
+                mu_b, sigma_sq_b = tf.nn.moments(x, [0, 1, 2])
+                sigma_b = tf.sqrt(sigma_sq_b)
+
+                with(tf.variable_scope('save_ops')):
+                    mu_asgn_old = tf.assign(mu_old, mu, name='mu_save')
+                    sigma_asgn_old = tf.assign(sigma_old, sigma, name='sigma_save')
 
                 with(tf.control_dependencies([mu_asgn_old, sigma_asgn_old])):
-                    mu_add = alpha * (mu_b - mu_asgn_old)
-                    sigma_add = alpha * (sigma_b - sigma_asgn_old)
+                    with(tf.variable_scope('compute_updates')):
+                        mu_add = alpha * (mu_b - mu_asgn_old)
+                        sigma_add = alpha * (sigma_b - sigma_asgn_old)
 
-                    mu_asgn = tf.assign_add(mu, mu_add)
-                    sigma_asgn = tf.assign_add(sigma, sigma_add)
+                    with(tf.variable_scope('update_ops')):
+                        mu_asgn = tf.assign_add(mu, mu_add, name='mu_update')
+                        sigma_asgn = tf.assign_add(sigma, sigma_add, name='sigma_update')
 
                     with(tf.control_dependencies([mu_asgn, sigma_asgn])):
-                        r = tf.identity(tf.stop_gradient(tf.clip_by_value(sigma_b / sigma_old, 1 / r_max, r_max)), 'r')
-                        d = tf.identity(tf.stop_gradient(tf.clip_by_value((mu_b - mu_old) / sigma_old, -d_max, d_max)), 'd')
-                        x_hat = ((x - mu_b) / sigma_b) * r + d
-                        y = gamma * x_hat + beta
+                        with(tf.variable_scope('r')):
+                            r = tf.identity(tf.stop_gradient(tf.clip_by_value(sigma_b / sigma_asgn_old, 1 / r_max, r_max)), 'r')
+                        with(tf.variable_scope('d')):
+                            d = tf.identity(tf.stop_gradient(tf.clip_by_value((mu_b - mu_asgn_old) / sigma_asgn_old, -d_max, d_max)), 'd')
+                        with(tf.variable_scope('y_train')):
+                            x_hat = ((x - mu_b) / sigma_b) * r + d
+                            y = gamma * x_hat + beta
 
             return y
 
-        result = tf.cond(training, lambda: train_step(x, mu, sigma, mu_b, sigma_b, momentum),
+        result = tf.cond(training, lambda: train_step(x, mu, sigma, momentum),
                          lambda: gamma * ((x - mu) / sigma) + beta)
         return result
 
@@ -525,11 +532,12 @@ def InceptionV3(include_top=True,
 
 
 def batchnorm_debug():
+    global sess, bn, inp, tr
     inp = tf.placeholder(tf.float32, [2, 1, 1, 1])
     tr = tf.placeholder(tf.bool, [])
     sess = tf.Session()
     sess = tf_debug.LocalCLIDebugWrapperSession(sess)
-    bn = batch_norm(inp, tr, 99999, 99999)
+    bn = batch_norm(inp, tr, 99999, 99999, 0.50)
     train_writer = tf.summary.FileWriter('./BNzz', sess.graph)
     sess.run(tf.global_variables_initializer())
     print(sess.run(bn, {inp: [[[[1]]], [[[2]]]], tr: True}))
