@@ -28,12 +28,24 @@ from tensorflow import layers
 
 from tensorflow.python import debug as tf_debug
 
-def batch_norm(x, training, r_max, d_max, momentum=0.99, epsilon=0.0001):
+
+def batch_norm(x, training, r_max, d_max, momentum=0.99, microbatch_size=1, epsilon=0.0001):
     '''
     :param x: Input tensor. The zeroth dimension must be the batch dimension
     :param training: A python boolean or a tf.bool tensor.
     :return: The output tensor.
     '''
+
+    # Dimensionality notes:
+    # OLD: For non-microbatched renorm, we take moments of N H W C tensors over N H W to obtain moments of shape C
+    # We then compute R and D per channel (shape N), clip them, and compute Y outputs
+    #
+    #
+    # For microbatched batch renorm with N microbatches of M elements, we reshape N*M H W C into N M H W C when training
+    # We then take moments, reducing over the M H W dimensions (i.e. [1 2 3]) to obtain moments of shape N 1 1 1 C
+    # R and D are computed per microbatch (shape N 1 1 1 C) and are broadcast over the M H W C dimensions
+    # Beta, gamma, mu, sigma, and their updates are all of shape C.
+
     channels = x.shape[-1]
 
     with(tf.variable_scope(None, 'batch_norm')):
@@ -44,14 +56,17 @@ def batch_norm(x, training, r_max, d_max, momentum=0.99, epsilon=0.0001):
         sigma = tf.get_variable("sigma", [channels], tf.float32, tf.ones_initializer, trainable=True)
 
         mu_old = tf.get_variable("mu_old", [channels], tf.float32, trainable=False, initializer=tf.zeros_initializer)
-        sigma_old = tf.get_variable("sigma_old", [channels], tf.float32, trainable=False, initializer=tf.ones_initializer)
+        sigma_old = tf.get_variable("sigma_old", [channels], tf.float32, trainable=False,
+                                    initializer=tf.ones_initializer)
 
         # Train branch
         def train_step(x, mu, sigma, alpha):
             with(tf.variable_scope('train_branch')):
-
-                mu_b, sigma_sq_b = tf.nn.moments(x, [0, 1, 2])
-                sigma_b = tf.sqrt(sigma_sq_b)
+                x_shape = tf.shape(x)
+                x_shaped = tf.reshape(x, [x_shape[0] // microbatch_size, microbatch_size, x.shape[1], x.shape[2],
+                                          x.shape[3]])  # [N M H W C]
+                mu_b, sigma_sq_b = tf.nn.moments(x_shaped, [1, 2, 3], keep_dims=True)  # [N 1 1 1 C]
+                sigma_b = tf.sqrt(sigma_sq_b)  # [N 1 1 1 C]
 
                 with(tf.variable_scope('save_ops')):
                     mu_asgn_old = tf.assign(mu_old, mu, name='mu_save')
@@ -59,8 +74,8 @@ def batch_norm(x, training, r_max, d_max, momentum=0.99, epsilon=0.0001):
 
                 with(tf.control_dependencies([mu_asgn_old, sigma_asgn_old])):
                     with(tf.variable_scope('compute_updates')):
-                        mu_add = alpha * (mu_b - mu_asgn_old)
-                        sigma_add = alpha * (sigma_b - sigma_asgn_old)
+                        mu_add = alpha * tf.reduce_mean((mu_b - mu_asgn_old), [0, 1, 2, 3])  # [C]
+                        sigma_add = alpha * tf.reduce_mean((sigma_b - sigma_asgn_old), [0, 1, 2, 3])  # [C]
 
                     with(tf.variable_scope('update_ops')):
                         mu_asgn = tf.assign_add(mu, mu_add, name='mu_update')
@@ -68,18 +83,19 @@ def batch_norm(x, training, r_max, d_max, momentum=0.99, epsilon=0.0001):
 
                     with(tf.control_dependencies([mu_asgn, sigma_asgn])):
                         with(tf.variable_scope('r')):
-                            r = tf.identity(tf.stop_gradient(tf.clip_by_value(sigma_b / sigma_asgn_old, 1 / r_max, r_max)), 'r')
+                            r = tf.stop_gradient(tf.clip_by_value(sigma_b / sigma_asgn_old, 1 / r_max, r_max))
                         with(tf.variable_scope('d')):
-                            d = tf.identity(tf.stop_gradient(tf.clip_by_value((mu_b - mu_asgn_old) / sigma_asgn_old, -d_max, d_max)), 'd')
+                            d = tf.stop_gradient(tf.clip_by_value((mu_b - mu_asgn_old) / sigma_asgn_old, -d_max, d_max))
                         with(tf.variable_scope('y_train')):
-                            x_hat = ((x - mu_b) / sigma_b) * r + d
+                            x_hat = ((x_shaped - mu_b) / sigma_b) * r + d
                             y = gamma * x_hat + beta
 
-            return y
+            return tf.reshape(y, x_shape)
 
         result = tf.cond(training, lambda: train_step(x, mu, sigma, momentum),
                          lambda: gamma * ((x - mu) / sigma) + beta)
         return result
+
 
 WEIGHTS_PATH = (
     'https://github.com/fchollet/deep-learning-models/'
@@ -533,15 +549,15 @@ def InceptionV3(include_top=True,
 
 def batchnorm_debug():
     global sess, bn, inp, tr
-    inp = tf.placeholder(tf.float32, [2, 1, 1, 1])
+    inp = tf.placeholder(tf.float32, [None, 1, 1, 2])
     tr = tf.placeholder(tf.bool, [])
     sess = tf.Session()
-    sess = tf_debug.LocalCLIDebugWrapperSession(sess)
-    bn = batch_norm(inp, tr, 99999, 99999, 0.50)
+    #sess = tf_debug.LocalCLIDebugWrapperSession(sess)
+    bn = batch_norm(inp, tr, 99999, 99999, 0.50, 2)
     train_writer = tf.summary.FileWriter('./BNzz', sess.graph)
     sess.run(tf.global_variables_initializer())
-    print(sess.run(bn, {inp: [[[[1]]], [[[2]]]], tr: True}))
-    print(sess.run(bn, {inp: [[[[1]]], [[[2]]]], tr: True}))
+    print(sess.run(bn, {inp: [[[[1, 1]]], [[[2, 2]]], [[[1, 1]]], [[[2, 2]]]], tr: True}))
+    print(sess.run(bn, {inp: [[[[1, 1]]], [[[2, 2]]], [[[1, 1]]], [[[2, 2]]]], tr: True}))
 
 
 batchnorm_debug()
