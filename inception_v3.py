@@ -297,13 +297,13 @@ def InceptionV3(images,
     # Global average pooling. Assumes channels_last
     x = tf.reduce_mean(x, axis=[1, 2])
     logits = layers.dense(x, classes, activation=None, name='logits')
-    predictions = tf.nn.softmax(logits, name='predictions')
+    predictions = tf.argmax(logits, axis=1, output_type=tf.int32, name='predictions')
 
-    loss = tf.losses.softmax_cross_entropy(labels, logits)
-    train_step = (tf.train.RMSPropOptimizer(learning_rate=0.001)
+    loss = tf.losses.sparse_softmax_cross_entropy(labels, logits)
+    train_step = (tf.train.GradientDescentOptimizer(learning_rate=0.1)
                           .minimize(loss))
 
-    correct_prediction = tf.equal(tf.round(predictions), labels)
+    correct_prediction = tf.equal(predictions, labels)
     accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
     return predictions, loss, train_step, accuracy

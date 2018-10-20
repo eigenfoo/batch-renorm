@@ -2,7 +2,7 @@ from inception_v3 import InceptionV3
 import numpy as np
 import tensorflow as tf
 from tensorflow import keras
-from tensorflow.keras.datasets.cifar100 import load_data
+from tensorflow.keras.datasets.cifar10 import load_data
 from tqdm import tqdm
 
 # As specified in paper
@@ -11,7 +11,7 @@ NUM_MICROBATCHES = 50
 BATCH_SIZE = MICROBATCH_SIZE * NUM_MICROBATCHES
 NUM_EPOCHS = 10
 
-NUM_CLASSES = 100
+NUM_CLASSES = 10
 HEIGHT = 32
 WIDTH = 32
 NUM_CHANNELS = 3
@@ -28,15 +28,15 @@ y_train = y_train[:49600]
 x_train, x_val = \
     map(lambda x: (x / 255.0).reshape([-1, HEIGHT, WIDTH, NUM_CHANNELS]),
         [x_train, x_val])
-y_train, y_val = \
-    map(lambda y: keras.utils.to_categorical(y, NUM_CLASSES),
-        [y_train, y_val])
+#y_train, y_val = \
+#    map(lambda y: keras.utils.to_categorical(y, NUM_CLASSES),
+#        [y_train, y_val])
 
 x_train_batches = np.split(x_train, x_train.shape[0] // BATCH_SIZE)
 y_train_batches = np.split(y_train, y_train.shape[0] // BATCH_SIZE)
 
 images = tf.placeholder(tf.float32, shape=[None, HEIGHT, WIDTH, NUM_CHANNELS])
-labels = tf.placeholder(tf.float32, shape=[None, NUM_CLASSES])
+labels = tf.squeeze(tf.placeholder(tf.int32, shape=[None]))
 training = tf.placeholder(bool, shape=[])
 
 # Make model
@@ -45,7 +45,7 @@ predictions, loss, train_step, accuracy = InceptionV3(
     labels,
     training,
     classes=NUM_CLASSES,
-    renorm=False,
+    renorm=True,
     microbatch_size=MICROBATCH_SIZE,
     num_microbatches=NUM_MICROBATCHES
 )
@@ -53,6 +53,7 @@ predictions, loss, train_step, accuracy = InceptionV3(
 sess = tf.Session()
 sess.run(tf.global_variables_initializer())
 sess.run(tf.local_variables_initializer())
+train_writer = tf.summary.FileWriter('./train_inspecc', sess.graph)
 
 # Training
 for i in range(NUM_EPOCHS):
