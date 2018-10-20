@@ -141,9 +141,10 @@ def conv2d_bn(x,
         name=conv_name)
 
     if not renorm:
+        # Batch norm is simply with batch renorm with r_max = 1, d_max = 0
         x = batch_norm(x, training, 1, 0, microbatch_size=microbatch_size)
     else:
-        x = batch_norm(x, training, 2, 1, microbatch_size=microbatch_size)
+        x = batch_norm(x, training, 1.5, -0.5, microbatch_size=microbatch_size)
 
     x = tf.nn.relu(x, name=name)
     return x

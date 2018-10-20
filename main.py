@@ -2,16 +2,16 @@ from inception_v3 import InceptionV3
 import numpy as np
 import tensorflow as tf
 from tensorflow import keras
-from tensorflow.keras.datasets.cifar10 import load_data
+from tensorflow.keras.datasets.cifar100 import load_data
 from tqdm import tqdm
 
 # As specified in paper
 MICROBATCH_SIZE = 32
 NUM_MICROBATCHES = 50
 BATCH_SIZE = MICROBATCH_SIZE * NUM_MICROBATCHES
-NUM_EPOCHS = 3
+NUM_EPOCHS = 10
 
-NUM_CLASSES = 10
+NUM_CLASSES = 100
 HEIGHT = 32
 WIDTH = 32
 NUM_CHANNELS = 3
@@ -19,12 +19,10 @@ NUM_CHANNELS = 3
 # Load data and split into train and val sets
 (x_train, y_train), (x_val, y_val) = load_data()
 
-# FIXME this is an ugly hack to make sure all data has a multiple of 1600 of
-# examples...
+# FIXME this is an ugly hack to make sure training data has a multiple of 1600
+# of examples, for microbatching to work out.
 x_train = x_train[:49600]
 y_train = y_train[:49600]
-#x_val = x_val[:9600]
-#y_val = y_val[:9600]
 
 # Normalize and reshape data and labels
 x_train, x_val = \
@@ -75,4 +73,5 @@ for i in range(NUM_EPOCHS):
                            feed_dict={images: x_val,
                                       labels: y_val,
                                       training: False})
+
     print('Validation loss: {} - Validation accuracy: {}'.format(loss_, acc_))
