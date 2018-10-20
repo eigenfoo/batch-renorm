@@ -22,7 +22,11 @@ NUM_CHANNELS = 3
 # FIXME this is an ugly hack to make sure training data has a multiple of 1600
 # of examples, for microbatching to work out.
 x_train = x_train[:49600]
-y_train = y_train[:49600]
+y_train = np.squeeze(y_train[:49600])
+
+# FIXME ugly hack to avoid evaluating val in batches
+x_val = x_val[:2000]
+y_val = np.squeeze(y_val[:2000])
 
 # Normalize and reshape data and labels
 x_train, x_val = \
@@ -36,7 +40,7 @@ x_train_batches = np.split(x_train, x_train.shape[0] // BATCH_SIZE)
 y_train_batches = np.split(y_train, y_train.shape[0] // BATCH_SIZE)
 
 images = tf.placeholder(tf.float32, shape=[None, HEIGHT, WIDTH, NUM_CHANNELS])
-labels = tf.squeeze(tf.placeholder(tf.int32, shape=[None]))
+labels = tf.placeholder(tf.int32, shape=[None])
 training = tf.placeholder(bool, shape=[])
 
 # Make model
@@ -45,7 +49,7 @@ predictions, loss, train_step, accuracy = InceptionV3(
     labels,
     training,
     classes=NUM_CLASSES,
-    renorm=True,
+    renorm=False,
     microbatch_size=MICROBATCH_SIZE,
     num_microbatches=NUM_MICROBATCHES
 )
@@ -53,7 +57,7 @@ predictions, loss, train_step, accuracy = InceptionV3(
 sess = tf.Session()
 sess.run(tf.global_variables_initializer())
 sess.run(tf.local_variables_initializer())
-train_writer = tf.summary.FileWriter('./train_inspecc', sess.graph)
+# train_writer = tf.summary.FileWriter('./train_inspecc', sess.graph)
 
 # Training
 for i in range(NUM_EPOCHS):
