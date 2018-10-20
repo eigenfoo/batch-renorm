@@ -21,7 +21,7 @@ def batch_norm(x, training, r_max, d_max,
     moments of shape N*1*1*1*C. `r` and `d` are computed per microbatch
     (shape N*1*1*1*C) and are broadcast over the M H W C dimensions.
     Beta, gamma, mu, sigma, and their updates are all of shape C.
-   '''
+    '''
     channels = x.shape[-1]
 
     with(tf.variable_scope(None, 'batch_norm')):
@@ -141,17 +141,9 @@ def conv2d_bn(x,
         name=conv_name)
 
     if not renorm:
-        # Technically, microbatch batch normalization calls for updating
-        # gradient's moments sequentially from microbatch batch to microbatch
-        # batch. However, the Tensorflow implementation does _not_ do this,
-        # instead averaging over the moments. This is exactly what we need. See
-        # https://github.com/tensorflow/tensorflow/blob/c19e29306ce1777456b2dbb3a14f511edf7883a8/tensorflow/python/keras/layers/normalization.py#L581-L585
-        x = layers.batch_normalization(x, axis=bn_axis, scale=False,
-                                       virtual_batch_size=microbatch_size,
-                                       training=training, name=bn_name)
+        x = batch_norm(x, training, 1, 0, microbatch_size=microbatch_size)
     else:
-        # TODO(andrey) implement batch renorm with a tf.keras.layers interface
-        pass
+        x = batch_norm(x, training, 2, 1, microbatch_size=microbatch_size)
 
     x = tf.nn.relu(x, name=name)
     return x
@@ -331,4 +323,5 @@ def batchnorm_debug():
                         tr: True}))
 
 
-batchnorm_debug()
+if __name__ == '__main__':
+    batchnorm_debug()
