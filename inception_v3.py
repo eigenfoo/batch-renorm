@@ -172,135 +172,40 @@ def InceptionV3(images,
         microbatch_size: number of examples in one microbatch.
         num_microbatches: number of microbatches in one minibatch.
     """
-    channel_axis = 3  # Assume channels_last
 
-    x = conv2d_bn(images, 32, 3, 3, training, strides=(2, 2),
+    x = conv2d_bn(images, 32, 3, 3, training,
+                  padding='same', renorm=renorm,
+                  microbatch_size=microbatch_size,
+                  num_microbatches=num_microbatches)
+
+    x = conv2d_bn(images, 32, 3, 3, training,
                   padding='valid', renorm=renorm,
                   microbatch_size=microbatch_size,
                   num_microbatches=num_microbatches)
-    x = conv2d_bn(x, 32, 3, 3, training, padding='valid',
-                  renorm=renorm, microbatch_size=microbatch_size,
+
+    x = layers.max_pooling2d(x, (2, 2), strides=(1, 1))
+
+    x = conv2d_bn(images, 64, 3, 3, training,
+                  padding='same', renorm=renorm,
+                  microbatch_size=microbatch_size,
                   num_microbatches=num_microbatches)
-    x = conv2d_bn(x, 64, 3, 3, training,
-                  renorm=renorm, microbatch_size=microbatch_size,
+
+    x = conv2d_bn(images, 64, 3, 3, training,
+                  padding='valid', renorm=renorm,
+                  microbatch_size=microbatch_size,
                   num_microbatches=num_microbatches)
-    x = layers.max_pooling2d(x, (3, 3), strides=(2, 2))
 
-    x = conv2d_bn(x, 80, 1, 1, training, padding='valid',
-                  renorm=renorm, microbatch_size=microbatch_size,
-                  num_microbatches=num_microbatches)
-    x = conv2d_bn(x, 192, 3, 3, training, padding='valid',
-                  renorm=renorm, microbatch_size=microbatch_size,
-                  num_microbatches=num_microbatches)
-    x = layers.max_pooling2d(x, (3, 3), strides=(2, 2))
-
-    # mixed 0: 35 x 35 x 256
-    branch1x1 = conv2d_bn(x, 64, 1, 1, training, renorm=renorm,
-                          microbatch_size=microbatch_size,
-                          num_microbatches=num_microbatches)
-
-    branch5x5 = conv2d_bn(x, 48, 1, 1, training, renorm=renorm,
-                          microbatch_size=microbatch_size,
-                          num_microbatches=num_microbatches)
-    branch5x5 = conv2d_bn(branch5x5, 64, 5, 5, training, renorm=renorm,
-                          microbatch_size=microbatch_size,
-                          num_microbatches=num_microbatches)
-
-    branch3x3dbl = conv2d_bn(x, 64, 1, 1, training, renorm=renorm,
-                             microbatch_size=microbatch_size,
-                             num_microbatches=num_microbatches)
-    branch3x3dbl = conv2d_bn(branch3x3dbl, 96, 3, 3, training, renorm=renorm,
-                             microbatch_size=microbatch_size,
-                             num_microbatches=num_microbatches)
-    branch3x3dbl = conv2d_bn(branch3x3dbl, 96, 3, 3, training, renorm=renorm,
-                             microbatch_size=microbatch_size,
-                             num_microbatches=num_microbatches)
-
-    branch_pool = layers.average_pooling2d(x, (3, 3),
-                                           strides=(1, 1),
-                                           padding='same')
-    branch_pool = conv2d_bn(branch_pool, 32, 1, 1, training, renorm=renorm,
-                            microbatch_size=microbatch_size,
-                            num_microbatches=num_microbatches)
-    x = tf.concat(
-        [branch1x1, branch5x5, branch3x3dbl, branch_pool],
-        axis=channel_axis,
-        name='mixed0')
-
-    # mixed 1: 35 x 35 x 288
-    branch1x1 = conv2d_bn(x, 64, 1, 1, training, renorm=renorm,
-                          microbatch_size=microbatch_size,
-                          num_microbatches=num_microbatches)
-
-    branch5x5 = conv2d_bn(x, 48, 1, 1, training, renorm=renorm,
-                          microbatch_size=microbatch_size,
-                          num_microbatches=num_microbatches)
-    branch5x5 = conv2d_bn(branch5x5, 64, 5, 5, training, renorm=renorm,
-                          microbatch_size=microbatch_size,
-                          num_microbatches=num_microbatches)
-
-    branch3x3dbl = conv2d_bn(x, 64, 1, 1, training, renorm=renorm,
-                             microbatch_size=microbatch_size,
-                             num_microbatches=num_microbatches)
-    branch3x3dbl = conv2d_bn(branch3x3dbl, 96, 3, 3, training, renorm=renorm,
-                             microbatch_size=microbatch_size,
-                             num_microbatches=num_microbatches)
-    branch3x3dbl = conv2d_bn(branch3x3dbl, 96, 3, 3, training, renorm=renorm,
-                             microbatch_size=microbatch_size,
-                             num_microbatches=num_microbatches)
-
-    branch_pool = layers.average_pooling2d(x, (3, 3),
-                                           strides=(1, 1),
-                                           padding='same')
-    branch_pool = conv2d_bn(branch_pool, 64, 1, 1, training, renorm=renorm,
-                            microbatch_size=microbatch_size,
-                            num_microbatches=num_microbatches)
-    x = tf.concat(
-        [branch1x1, branch5x5, branch3x3dbl, branch_pool],
-        axis=channel_axis,
-        name='mixed1')
-
-    # mixed 2: 35 x 35 x 288
-    branch1x1 = conv2d_bn(x, 64, 1, 1, training, renorm=renorm,
-                          microbatch_size=microbatch_size,
-                          num_microbatches=num_microbatches)
-
-    branch5x5 = conv2d_bn(x, 48, 1, 1, training, renorm=renorm,
-                          microbatch_size=microbatch_size,
-                          num_microbatches=num_microbatches)
-    branch5x5 = conv2d_bn(branch5x5, 64, 5, 5, training, renorm=renorm,
-                          microbatch_size=microbatch_size,
-                          num_microbatches=num_microbatches)
-
-    branch3x3dbl = conv2d_bn(x, 64, 1, 1, training, renorm=renorm,
-                             microbatch_size=microbatch_size,
-                             num_microbatches=num_microbatches)
-    branch3x3dbl = conv2d_bn(branch3x3dbl, 96, 3, 3, training, renorm=renorm,
-                             microbatch_size=microbatch_size,
-                             num_microbatches=num_microbatches)
-    branch3x3dbl = conv2d_bn(branch3x3dbl, 96, 3, 3, training, renorm=renorm,
-                             microbatch_size=microbatch_size,
-                             num_microbatches=num_microbatches)
-
-    branch_pool = layers.average_pooling2d(x, (3, 3),
-                                           strides=(1, 1),
-                                           padding='same')
-    branch_pool = conv2d_bn(branch_pool, 64, 1, 1, training, renorm=renorm,
-                            microbatch_size=microbatch_size,
-                            num_microbatches=num_microbatches)
-    x = tf.concat(
-        [branch1x1, branch5x5, branch3x3dbl, branch_pool],
-        axis=channel_axis,
-        name='mixed2')
+    x = layers.max_pooling2d(x, (2, 2), strides=(1, 1))
 
     # Classification block
     # Global average pooling. Assumes channels_last
-    x = tf.reduce_mean(x, axis=[1, 2])
+    x = layers.flatten(x)
+    x = layers.dense(x, 512, activation=tf.nn.relu)
     logits = layers.dense(x, classes, activation=None, name='logits')
     predictions = tf.argmax(logits, axis=1, output_type=tf.int32, name='predictions')
 
     loss = tf.losses.sparse_softmax_cross_entropy(labels, logits)
-    train_step = (tf.train.GradientDescentOptimizer(learning_rate=0.1)
+    train_step = (tf.train.RMSPropOptimizer(learning_rate=0.0001)
                           .minimize(loss))
 
     correct_prediction = tf.equal(predictions, labels)
