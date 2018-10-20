@@ -130,7 +130,7 @@ def conv2d_bn(x,
         bn_name = None
         conv_name = None
 
-    bn_axis = 3  # Assume channels_last
+    bn_axis = -1  # Assume channels_last
     x = layers.conv2d(
         x,
         filters,
