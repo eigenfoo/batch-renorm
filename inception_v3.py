@@ -186,13 +186,13 @@ def InceptionV3(images,
                   num_microbatches=num_microbatches)
     x = layers.max_pooling2d(x, (3, 3), strides=(2, 2))
 
-    x = conv2d_bn(x, 80, 1, 1, training, padding='valid',
-                  renorm=renorm, microbatch_size=microbatch_size,
-                  num_microbatches=num_microbatches)
-    x = conv2d_bn(x, 192, 3, 3, training, padding='valid',
-                  renorm=renorm, microbatch_size=microbatch_size,
-                  num_microbatches=num_microbatches)
-    x = layers.max_pooling2d(x, (3, 3), strides=(2, 2))
+    # x = conv2d_bn(x, 80, 1, 1, training, padding='valid',
+    #               renorm=renorm, microbatch_size=microbatch_size,
+    #               num_microbatches=num_microbatches)
+    # x = conv2d_bn(x, 192, 3, 3, training, padding='valid',
+    #               renorm=renorm, microbatch_size=microbatch_size,
+    #               num_microbatches=num_microbatches)
+    # x = layers.max_pooling2d(x, (3, 3), strides=(2, 2))
 
     # mixed 0: 35 x 35 x 256
     branch1x1 = conv2d_bn(x, 64, 1, 1, training, renorm=renorm,
