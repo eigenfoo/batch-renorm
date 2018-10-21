@@ -1,13 +1,14 @@
 from inception_v3 import InceptionV3
 import numpy as np
+import pandas as pd
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras.datasets.cifar100 import load_data
 from tqdm import tqdm
 
 # As specified in paper
-MICROBATCH_SIZE = 8
-NUM_MICROBATCHES = 25
+MICROBATCH_SIZE = 4
+NUM_MICROBATCHES = 50
 BATCH_SIZE = MICROBATCH_SIZE * NUM_MICROBATCHES
 NUM_EPOCHS = 30
 
@@ -62,6 +63,8 @@ sess.run(tf.global_variables_initializer())
 sess.run(tf.local_variables_initializer())
 # train_writer = tf.summary.FileWriter('./train_inspecc', sess.graph)
 
+accs = []
+
 # Training
 for i in range(NUM_EPOCHS):
     print('Epoch #{}: '.format(i))
@@ -75,6 +78,7 @@ for i in range(NUM_EPOCHS):
                            feed_dict={images: x_batch,
                                       labels: y_batch,
                                       training: True})
+    accs.append(acc_)
 
     print('Train loss: {} - Train accuracy: {}'.format(loss_, acc_))
 
@@ -86,3 +90,6 @@ for i in range(NUM_EPOCHS):
 
     print('Validation loss: {} - Validation accuracy: {}'.format(loss_, acc_))
 
+df = pd.DataFrame(data=accs,
+                  columns=['Validation Accuracy'])
+df.to_csv('val_accs.csv')
