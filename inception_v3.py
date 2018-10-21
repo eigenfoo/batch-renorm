@@ -98,13 +98,13 @@ def conv2d_bn(x,
               num_row,
               num_col,
               training,
+              rmax=2,
+              dmax=1,
               padding='same',
               strides=(1, 1),
               renorm=False,
               microbatch_size=32,
               num_microbatches=50,
-              rmax=2,
-              dmax=1,
               name=None):
     """Utility function to apply conv + BN.
 
@@ -155,6 +155,8 @@ def conv2d_bn(x,
 def InceptionV3(images,
                 labels,
                 training,
+                rmax,
+                dmax,
                 classes=10,
                 renorm=False,
                 microbatch_size=32,
@@ -174,26 +176,64 @@ def InceptionV3(images,
         microbatch_size: number of examples in one microbatch.
         num_microbatches: number of microbatches in one minibatch.
     """
-    channel_axis = 3  # Assume channels_last
+    channel_axis = -1  # Assume channels_last
     last = images
 
-    def c2d(inp, filters, size, padding="SAME", strides=1):
+    last = conv2d_bn(last, 128, 3, 3, training, renorm=renorm,
+                     rmax=rmax, dmax=dmax,
+                     microbatch_size=microbatch_size,
+                     num_microbatches=num_microbatches)
+    last = conv2d_bn(last, 128, 3, 3, training, renorm=renorm,
+                     rmax=rmax, dmax=dmax,
+                     microbatch_size=microbatch_size,
+                     num_microbatches=num_microbatches)
+    last = conv2d_bn(last, 128, 3, 3, training, strides=(2, 2),
+                     rmax=rmax, dmax=dmax,
+                     renorm=renorm,
+                     microbatch_size=microbatch_size,
+                     num_microbatches=num_microbatches)
+    last = tf.layers.dropout(last, 0.5, training=training)
+
+    last = conv2d_bn(last, 256, 3, 3, training, renorm=renorm,
+                     rmax=rmax, dmax=dmax,
+                     microbatch_size=microbatch_size,
+                     num_microbatches=num_microbatches)
+    last = conv2d_bn(last, 256, 3, 3, training, renorm=renorm,
+                     rmax=rmax, dmax=dmax,
+                     microbatch_size=microbatch_size,
+                     num_microbatches=num_microbatches)
+    last = conv2d_bn(last, 256, 3, 3, training, strides=(2, 2),
+                     rmax=rmax, dmax=dmax,
+                     renorm=renorm,
+                     microbatch_size=microbatch_size,
+                     num_microbatches=num_microbatches)
+    last = tf.layers.dropout(last, 0.5, training=training)
+
+    last = conv2d_bn(last, 256, 1, 1, training, renorm=renorm,
+                     rmax=rmax, dmax=dmax,
+                     microbatch_size=microbatch_size,
+                     num_microbatches=num_microbatches)
+    last = conv2d_bn(last, 100, 1, 1, training, renorm=renorm,
+                     rmax=rmax, dmax=dmax,
+                     microbatch_size=microbatch_size,
+                     num_microbatches=num_microbatches)
+
+    '''
+    def c2d(inp, filters, size, padding='same', strides=1):
         return tf.layers.conv2d(inp, filters=filters, kernel_size=size, padding=padding, strides=strides,
                                 activation=tf.nn.relu, kernel_initializer=tf.variance_scaling_initializer)
-
     last = c2d(last, 128, 3)
     last = c2d(last, 128, 3)
-    #last = c2d(last, 128, 3)
     last = c2d(last, 128, 3, strides=2)
     last = tf.layers.dropout(last, 0.5, training=training)
     last = c2d(last, 256, 3)
     last = c2d(last, 256, 3)
-    #last = c2d(last, 256, 3)  # Last addition
     last = c2d(last, 256, 3, strides=2)
     last = tf.layers.dropout(last, 0.5, training=training)
-    #last = c2d(last, 256, 3)
     last = c2d(last, 256, 1)
     last = c2d(last, 100, 1)
+    '''
+
     last = tf.reduce_mean(last, axis=[1, 2])
     logits = tf.identity(last, name="logits")
     predictions = tf.argmax(logits, axis=1, output_type=tf.int32, name='predictions')
