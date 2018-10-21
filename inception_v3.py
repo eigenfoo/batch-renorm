@@ -179,14 +179,14 @@ def InceptionV3(images,
     channel_axis = -1  # Assume channels_last
     last = images
 
-    last = conv2d_bn(last, 128, 3, 3, training, renorm=renorm,
+    last = conv2d_bn(last, 64, 3, 3, training, renorm=renorm,
                      rmax=rmax, dmax=dmax,
                      microbatch_size=microbatch_size,
                      num_microbatches=num_microbatches)
-    last = conv2d_bn(last, 128, 3, 3, training, renorm=renorm,
-                     rmax=rmax, dmax=dmax,
-                     microbatch_size=microbatch_size,
-                     num_microbatches=num_microbatches)
+    #last = conv2d_bn(last, 128, 3, 3, training, renorm=renorm,
+    #                 rmax=rmax, dmax=dmax,
+    #                 microbatch_size=microbatch_size,
+    #                 num_microbatches=num_microbatches)
     last = conv2d_bn(last, 128, 3, 3, training, strides=(2, 2),
                      rmax=rmax, dmax=dmax,
                      renorm=renorm,
@@ -198,10 +198,10 @@ def InceptionV3(images,
                      rmax=rmax, dmax=dmax,
                      microbatch_size=microbatch_size,
                      num_microbatches=num_microbatches)
-    last = conv2d_bn(last, 256, 3, 3, training, renorm=renorm,
-                     rmax=rmax, dmax=dmax,
-                     microbatch_size=microbatch_size,
-                     num_microbatches=num_microbatches)
+    #last = conv2d_bn(last, 256, 3, 3, training, renorm=renorm,
+    #                 rmax=rmax, dmax=dmax,
+    #                 microbatch_size=microbatch_size,
+    #                 num_microbatches=num_microbatches)
     last = conv2d_bn(last, 256, 3, 3, training, strides=(2, 2),
                      rmax=rmax, dmax=dmax,
                      renorm=renorm,

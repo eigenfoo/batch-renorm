@@ -68,20 +68,19 @@ accs = []
 
 
 def get_rmax(num_epoch):
-    thresh_epoch = 20
+    thresh_epoch = 5
     if num_epoch < thresh_epoch:
         return 1
     else:
-        return 1 + 2*(num_epoch - thresh_epoch)/(NUM_EPOCHS - thresh_epoch)
+        return 1 + (num_epoch - thresh_epoch)/(NUM_EPOCHS - thresh_epoch)
 
 
 def get_dmax(num_epoch):
-    thresh_epoch = 20
+    thresh_epoch = 5
     if num_epoch < thresh_epoch:
         return 0
     else:
-        return 5*(num_epoch - thresh_epoch)/(NUM_EPOCHS - thresh_epoch)
-
+        return (num_epoch - thresh_epoch)/(NUM_EPOCHS - thresh_epoch)
 
 # Training
 for i in range(NUM_EPOCHS):
