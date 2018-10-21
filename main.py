@@ -2,16 +2,16 @@ from inception_v3 import InceptionV3
 import numpy as np
 import tensorflow as tf
 from tensorflow import keras
-from tensorflow.keras.datasets.cifar10 import load_data
+from tensorflow.keras.datasets.cifar100 import load_data
 from tqdm import tqdm
 
 # As specified in paper
-MICROBATCH_SIZE = 32
-NUM_MICROBATCHES = 50
+MICROBATCH_SIZE = 8
+NUM_MICROBATCHES = 25
 BATCH_SIZE = MICROBATCH_SIZE * NUM_MICROBATCHES
 NUM_EPOCHS = 30
 
-NUM_CLASSES = 10
+NUM_CLASSES = 100
 HEIGHT = 32
 WIDTH = 32
 NUM_CHANNELS = 3
@@ -43,13 +43,16 @@ images = tf.placeholder(tf.float32, shape=[None, HEIGHT, WIDTH, NUM_CHANNELS])
 labels = tf.placeholder(tf.int32, shape=[None])
 training = tf.placeholder(bool, shape=[])
 
+rmax = tf.placeholder(tf.float32, [])
+dmax = tf.placeholder(tf.float32, [])
+
 # Make model
 predictions, loss, train_step, accuracy = InceptionV3(
     images,
     labels,
     training,
     classes=NUM_CLASSES,
-    renorm=False,
+    renorm=True,
     microbatch_size=MICROBATCH_SIZE,
     num_microbatches=NUM_MICROBATCHES
 )
@@ -65,6 +68,8 @@ for i in range(NUM_EPOCHS):
     for x_batch, y_batch in tqdm(zip(x_train_batches, y_train_batches)):
         sess.run(train_step, feed_dict={images: x_batch,
                                         labels: y_batch,
+                                        rmax: 1+(i/20),
+                                        dmax: (i / 20),
                                         training: True})
     loss_, acc_ = sess.run([loss, accuracy],
                            feed_dict={images: x_batch,
@@ -80,3 +85,4 @@ for i in range(NUM_EPOCHS):
                                       training: False})
 
     print('Validation loss: {} - Validation accuracy: {}'.format(loss_, acc_))
+
