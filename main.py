@@ -10,7 +10,7 @@ from tqdm import tqdm
 MICROBATCH_SIZE = 4
 NUM_MICROBATCHES = 50
 BATCH_SIZE = MICROBATCH_SIZE * NUM_MICROBATCHES
-NUM_EPOCHS = 30
+NUM_EPOCHS = 300
 
 NUM_CLASSES = 100
 HEIGHT = 32
@@ -26,8 +26,8 @@ x_train = x_train[:49600]
 y_train = np.squeeze(y_train[:49600])
 
 # FIXME ugly hack to avoid evaluating val in batches
-x_val = x_val[:2000]
-y_val = np.squeeze(y_val[:2000])
+x_val = x_val[:3000]
+y_val = np.squeeze(y_val[:3000])
 
 # Normalize and reshape data and labels
 x_train, x_val = \
@@ -61,7 +61,6 @@ predictions, loss, train_step, accuracy = InceptionV3(
 sess = tf.Session()
 sess.run(tf.global_variables_initializer())
 sess.run(tf.local_variables_initializer())
-# train_writer = tf.summary.FileWriter('./train_inspecc', sess.graph)
 
 accs = []
 
@@ -92,4 +91,5 @@ for i in range(NUM_EPOCHS):
 
 df = pd.DataFrame(data=accs,
                   columns=['Validation Accuracy'])
-df.to_csv('val_accs.csv')
+df.index = 248*df.index
+df.to_csv('val_accs_renorm.csv')
