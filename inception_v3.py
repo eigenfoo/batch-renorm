@@ -194,10 +194,10 @@ def InceptionV3(images,
                      num_microbatches=num_microbatches)
     last = tf.layers.dropout(last, 0.5, training=training)
 
-    last = conv2d_bn(last, 256, 3, 3, training, renorm=renorm,
-                     rmax=rmax, dmax=dmax,
-                     microbatch_size=microbatch_size,
-                     num_microbatches=num_microbatches)
+    #last = conv2d_bn(last, 256, 3, 3, training, renorm=renorm,
+    #                 rmax=rmax, dmax=dmax,
+    #                 microbatch_size=microbatch_size,
+    #                 num_microbatches=num_microbatches)
     #last = conv2d_bn(last, 256, 3, 3, training, renorm=renorm,
     #                 rmax=rmax, dmax=dmax,
     #                 microbatch_size=microbatch_size,
@@ -209,10 +209,10 @@ def InceptionV3(images,
                      num_microbatches=num_microbatches)
     last = tf.layers.dropout(last, 0.5, training=training)
 
-    last = conv2d_bn(last, 256, 1, 1, training, renorm=renorm,
-                     rmax=rmax, dmax=dmax,
-                     microbatch_size=microbatch_size,
-                     num_microbatches=num_microbatches)
+    #last = conv2d_bn(last, 256, 1, 1, training, renorm=renorm,
+    #                 rmax=rmax, dmax=dmax,
+    #                 microbatch_size=microbatch_size,
+    #                 num_microbatches=num_microbatches)
     last = conv2d_bn(last, 100, 1, 1, training, renorm=renorm,
                      rmax=rmax, dmax=dmax,
                      microbatch_size=microbatch_size,
