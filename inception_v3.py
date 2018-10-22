@@ -239,7 +239,7 @@ def InceptionV3(images,
     predictions = tf.argmax(logits, axis=1, output_type=tf.int32, name='predictions')
 
     loss = tf.losses.sparse_softmax_cross_entropy(labels, logits)
-    train_step = (tf.train.AdamOptimizer(learning_rate=0.000425)
+    train_step = (tf.train.AdamOptimizer(learning_rate=0.0001)
                           .minimize(loss))
 
     correct_prediction = tf.equal(predictions, labels)
