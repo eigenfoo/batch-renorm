@@ -7,10 +7,10 @@ from tensorflow.keras.datasets.cifar100 import load_data
 from tqdm import tqdm
 
 # As specified in paper
-MICROBATCH_SIZE = 8
-NUM_MICROBATCHES = 200
+MICROBATCH_SIZE = 2
+NUM_MICROBATCHES = 800
 BATCH_SIZE = MICROBATCH_SIZE * NUM_MICROBATCHES
-NUM_EPOCHS = 100
+NUM_EPOCHS = 300
 
 NUM_CLASSES = 100
 HEIGHT = 32
