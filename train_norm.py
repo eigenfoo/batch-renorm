@@ -24,6 +24,7 @@ NUM_CHANNELS = 3
 x_train = x_train[:49600]
 y_train = np.squeeze(y_train[:49600])
 
+y_val = np.squeeze(y_val);
 
 # Normalize and reshape data and labels
 x_train, x_val = \
