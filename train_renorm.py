@@ -1,8 +1,7 @@
-from inception_v3 import InceptionV3
+from convnet import make_conv_net
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-from tensorflow import keras
 from tensorflow.keras.datasets.cifar100 import load_data
 from tqdm import tqdm
 
@@ -33,9 +32,6 @@ y_val = np.squeeze(y_val[:3000])
 x_train, x_val = \
     map(lambda x: (x / 255.0).reshape([-1, HEIGHT, WIDTH, NUM_CHANNELS]),
         [x_train, x_val])
-#y_train, y_val = \
-#    map(lambda y: keras.utils.to_categorical(y, NUM_CLASSES),
-#        [y_train, y_val])
 
 x_train_batches = np.split(x_train, x_train.shape[0] // BATCH_SIZE)
 y_train_batches = np.split(y_train, y_train.shape[0] // BATCH_SIZE)
