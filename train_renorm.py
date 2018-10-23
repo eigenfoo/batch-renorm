@@ -40,7 +40,7 @@ rmax = tf.placeholder(tf.float32, [])
 dmax = tf.placeholder(tf.float32, [])
 
 # Make model
-predictions, loss, train_step, accuracy = InceptionV3(
+predictions, loss, train_step, accuracy = make_conv_net(
     images,
     labels,
     training,
