@@ -7,10 +7,10 @@ from tensorflow.keras.datasets.cifar100 import load_data
 from tqdm import tqdm
 
 # As specified in paper
-MICROBATCH_SIZE = 4
-NUM_MICROBATCHES = 50
+MICROBATCH_SIZE = 2
+NUM_MICROBATCHES = 800
 BATCH_SIZE = MICROBATCH_SIZE * NUM_MICROBATCHES
-NUM_EPOCHS = 100
+NUM_EPOCHS = 300
 
 NUM_CLASSES = 100
 HEIGHT = 32
@@ -68,19 +68,20 @@ accs = []
 
 
 def get_rmax(num_epoch):
-    thresh_epoch = 5
+    thresh_epoch = 20
     if num_epoch < thresh_epoch:
         return 1
     else:
-        return 1 + (num_epoch - thresh_epoch)/(NUM_EPOCHS - thresh_epoch)
+        return 1 + 0.5*(num_epoch - thresh_epoch)/(NUM_EPOCHS - thresh_epoch)
 
 
 def get_dmax(num_epoch):
-    thresh_epoch = 5
+    thresh_epoch = 20
     if num_epoch < thresh_epoch:
         return 0
     else:
-        return (num_epoch - thresh_epoch)/(NUM_EPOCHS - thresh_epoch)
+        return 0.5*(num_epoch - thresh_epoch)/(NUM_EPOCHS - thresh_epoch)
+
 
 # Training
 for i in range(NUM_EPOCHS):
@@ -113,5 +114,5 @@ for i in range(NUM_EPOCHS):
 
 df = pd.DataFrame(data=accs,
                   columns=['Validation Accuracy'])
-df.index = 248*df.index
+df.index = 31*df.index
 df.to_csv('val_accs_renorm.csv')
