@@ -1,3 +1,17 @@
+'''
+ECE471, Selected Topics in Machine Learning - Midterm Assignment
+Suubmit by Oct. 24, 10pm.
+tldr: Reproduce a subset of the results of a contemporary research paper.
+
+Paper:
+    Batch Renormalization: Towards Reducing Minibatch Dependence in
+        Batch-Normalized Models, Sergey Ioffe
+    http://ee.cooper.edu/~curro/cgml/week4/paper10.pdf
+
+GitHub repository:
+    https://github.com/eigenfoo/batch-renorm
+'''
+
 import tensorflow as tf
 from tensorflow import layers
 
