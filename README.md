@@ -3,6 +3,14 @@
 A Tensorflow implementation of batch renormalization, first introduced by Sergey
 Ioffe.
 
+Paper:
+    Batch Renormalization: Towards Reducing Minibatch Dependence in
+        Batch-Normalized Models, Sergey Ioffe
+    http://ee.cooper.edu/~curro/cgml/week4/paper10.pdf
+
+GitHub repository:
+    https://github.com/eigenfoo/batch-renorm
+
 The goal of this project is to reproduce the following figure from the paper:
 
 <figure>
