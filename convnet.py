@@ -1,14 +1,20 @@
 import tensorflow as tf
 from tensorflow import layers
-from tensorflow.python import debug as tf_debug
 
 
 def batch_norm(x, training, r_max, d_max,
                momentum=0.99, microbatch_size=1, epsilon=0.0001):
     '''
-    :param x: Input tensor. The zeroth dimension must be the batch dimension
-    :param training: A python boolean or a tf.bool tensor.
-    :return: The output tensor.
+    # Arguments
+        x: Input tensor. The zeroth dimension must be the batch dimension
+        training: bool or tf.Bool. Set to True at training time.
+        r_max: float or tf.Tensor. Threshold value to clip r by.
+        d_max: float or tf.Tensor. Threshold value to clip d by.
+        momentum: float. Momentum of moving averages.
+        microbatch_size: int. Size of microbatches.
+
+    # Returns
+        Output tensor.
 
     Dimensionality notes:
     OLD: For non-microbatched renorm, we take moments of N H W C tensors over
@@ -106,15 +112,15 @@ def conv2d_bn(x,
               microbatch_size=32,
               num_microbatches=50,
               name=None):
-    """Utility function to apply conv + BN.
+    """Utility function to apply conv_2d and batch (re)norm.
 
     # Arguments
         x: input tensor.
-        filters: filters in `Conv2D`.
+        filters: filters in `conv2d`.
         num_row: height of the convolution kernel.
         num_col: width of the convolution kernel.
-        padding: padding mode in `Conv2D`.
-        strides: strides in `Conv2D`.
+        padding: padding mode in `conv2d`.
+        strides: strides in `conv2d`.
         renorm: if True, apply batch renorm instead of batch norm.
         microbatch_size: number of examples in one microbatch.
         num_microbatches: number of microbatches in one minibatch.
@@ -146,27 +152,24 @@ def conv2d_bn(x,
         # Batch norm is simply with batch renorm with r_max = 1, d_max = 0
         x = batch_norm(x, training, 1, 0, microbatch_size=microbatch_size)
     else:
-        x = batch_norm(x, training, rmax, dmax, microbatch_size=microbatch_size)
+        x = batch_norm(x, training, rmax, dmax,
+                       microbatch_size=microbatch_size)
 
     x = tf.nn.relu(x, name=name)
     return x
 
 
-def InceptionV3(images,
-                labels,
-                training,
-                rmax,
-                dmax,
-                classes=10,
-                renorm=False,
-                microbatch_size=32,
-                num_microbatches=50,
-                **kwargs):
-    """Instantiates the Inception v3 architecture.
-
-    Optionally loads weights pre-trained on ImageNet.
-    Note that the data format convention used by the model is
-    the one specified in your Keras config at `~/.keras/keras.json`.
+def make_conv_net(images,
+                  labels,
+                  training,
+                  rmax,
+                  dmax,
+                  classes=10,
+                  renorm=False,
+                  microbatch_size=32,
+                  num_microbatches=50,
+                  **kwargs):
+    """Instantiates a convolutional neural network.
 
     # Arguments
         classes: optional number of classes to classify images
@@ -183,10 +186,6 @@ def InceptionV3(images,
                      rmax=rmax, dmax=dmax,
                      microbatch_size=microbatch_size,
                      num_microbatches=num_microbatches)
-    #last = conv2d_bn(last, 128, 3, 3, training, renorm=renorm,
-    #                 rmax=rmax, dmax=dmax,
-    #                 microbatch_size=microbatch_size,
-    #                 num_microbatches=num_microbatches)
     last = conv2d_bn(last, 128, 3, 3, training, strides=(2, 2),
                      rmax=rmax, dmax=dmax,
                      renorm=renorm,
@@ -194,14 +193,6 @@ def InceptionV3(images,
                      num_microbatches=num_microbatches)
     last = tf.layers.dropout(last, 0.5, training=training)
 
-    #last = conv2d_bn(last, 256, 3, 3, training, renorm=renorm,
-    #                 rmax=rmax, dmax=dmax,
-    #                 microbatch_size=microbatch_size,
-    #                 num_microbatches=num_microbatches)
-    #last = conv2d_bn(last, 256, 3, 3, training, renorm=renorm,
-    #                 rmax=rmax, dmax=dmax,
-    #                 microbatch_size=microbatch_size,
-    #                 num_microbatches=num_microbatches)
     last = conv2d_bn(last, 256, 3, 3, training, strides=(2, 2),
                      rmax=rmax, dmax=dmax,
                      renorm=renorm,
@@ -209,34 +200,15 @@ def InceptionV3(images,
                      num_microbatches=num_microbatches)
     last = tf.layers.dropout(last, 0.5, training=training)
 
-    #last = conv2d_bn(last, 256, 1, 1, training, renorm=renorm,
-    #                 rmax=rmax, dmax=dmax,
-    #                 microbatch_size=microbatch_size,
-    #                 num_microbatches=num_microbatches)
     last = conv2d_bn(last, 100, 1, 1, training, renorm=renorm,
                      rmax=rmax, dmax=dmax,
                      microbatch_size=microbatch_size,
                      num_microbatches=num_microbatches)
 
-    '''
-    def c2d(inp, filters, size, padding='same', strides=1):
-        return tf.layers.conv2d(inp, filters=filters, kernel_size=size, padding=padding, strides=strides,
-                                activation=tf.nn.relu, kernel_initializer=tf.variance_scaling_initializer)
-    last = c2d(last, 128, 3)
-    last = c2d(last, 128, 3)
-    last = c2d(last, 128, 3, strides=2)
-    last = tf.layers.dropout(last, 0.5, training=training)
-    last = c2d(last, 256, 3)
-    last = c2d(last, 256, 3)
-    last = c2d(last, 256, 3, strides=2)
-    last = tf.layers.dropout(last, 0.5, training=training)
-    last = c2d(last, 256, 1)
-    last = c2d(last, 100, 1)
-    '''
-
     last = tf.reduce_mean(last, axis=[1, 2])
     logits = tf.identity(last, name="logits")
-    predictions = tf.argmax(logits, axis=1, output_type=tf.int32, name='predictions')
+    predictions = tf.argmax(logits, axis=1, output_type=tf.int32,
+                            name='predictions')
 
     loss = tf.losses.sparse_softmax_cross_entropy(labels, logits)
     train_step = (tf.train.AdamOptimizer(learning_rate=0.0001)
@@ -246,22 +218,3 @@ def InceptionV3(images,
     accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
     return predictions, loss, train_step, accuracy
-
-
-def batchnorm_debug():
-    global sess, bn, inp, tr
-    inp = tf.placeholder(tf.float32, [None, 1, 1, 2])
-    tr = tf.placeholder(tf.bool, [])
-    sess = tf.Session()
-    # sess = tf_debug.LocalCLIDebugWrapperSession(sess)
-    bn = batch_norm(inp, tr, 99999, 99999, 0.50, 2)
-    train_writer = tf.summary.FileWriter('./BNzz', sess.graph)
-    sess.run(tf.global_variables_initializer())
-    print(sess.run(bn, {inp: [[[[1, 1]]], [[[2, 2]]], [[[1, 1]]], [[[2, 2]]]],
-                        tr: True}))
-    print(sess.run(bn, {inp: [[[[1, 1]]], [[[2, 2]]], [[[1, 1]]], [[[2, 2]]]],
-                        tr: True}))
-
-
-if __name__ == '__main__':
-    batchnorm_debug()
