@@ -1,3 +1,4 @@
+import sys
 from convnet import make_conv_net
 import numpy as np
 import pandas as pd
@@ -112,4 +113,4 @@ for i in range(NUM_EPOCHS):
 df = pd.DataFrame(data=accs,
                   columns=['Validation Accuracy'])
 df.index = 31*df.index
-df.to_csv('val_accs_norm_'+sys.argv[1]+'.csv')
+df.to_csv('val_accs_norm_{}.csv'.format(sys.argv[1]))
