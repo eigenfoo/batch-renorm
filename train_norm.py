@@ -1,11 +1,11 @@
 import sys
-from convnet import make_conv_net
 import numpy as np
 import pandas as pd
 import tensorflow as tf
 from tensorflow.keras.datasets.cifar100 import load_data
 from tqdm import tqdm
-import sys
+from convnet import make_conv_net
+
 # As specified in paper
 MICROBATCH_SIZE = 2
 NUM_MICROBATCHES = 800
@@ -25,7 +25,7 @@ NUM_CHANNELS = 3
 x_train = x_train[:49600]
 y_train = np.squeeze(y_train[:49600])
 
-y_val = np.squeeze(y_val);
+y_val = np.squeeze(y_val)
 
 # Normalize and reshape data and labels
 x_train, x_val = \
@@ -100,11 +100,11 @@ for i in range(NUM_EPOCHS):
     tacc = 0
     for i in range(5):
         loss_, acc_ = sess.run([loss, accuracy],
-                           feed_dict={images: x_val[i*2000:i*2000+2000],
-                                      labels: y_val[i*2000:i*2000+2000],
-                                      rmax: get_rmax(i),  # Ignored since
-                                      dmax: get_dmax(i),  # training=False
-                                      training: False})
+                               feed_dict={images: x_val[i*2000:i*2000+2000],
+                                          labels: y_val[i*2000:i*2000+2000],
+                                          rmax: get_rmax(i),  # Ignored since
+                                          dmax: get_dmax(i),  # training=False
+                                          training: False})
         tacc = tacc + (acc_/5.0)
     accs.append(tacc)
 
