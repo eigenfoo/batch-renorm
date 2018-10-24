@@ -4,7 +4,7 @@ import pandas as pd
 import tensorflow as tf
 from tensorflow.keras.datasets.cifar100 import load_data
 from tqdm import tqdm
-
+import sys
 # As specified in paper
 MICROBATCH_SIZE = 2
 NUM_MICROBATCHES = 800
@@ -110,4 +110,4 @@ for i in range(NUM_EPOCHS):
 df = pd.DataFrame(data=accs,
                   columns=['Validation Accuracy'])
 df.index = 31*df.index
-df.to_csv('val_accs_renorm.csv')
+df.to_csv('val_accs_renorm_'+sys.argv[1]+'.csv')
