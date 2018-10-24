@@ -5,7 +5,7 @@ import pandas as pd
 import tensorflow as tf
 from tensorflow.keras.datasets.cifar100 import load_data
 from tqdm import tqdm
-
+import sys
 # As specified in paper
 MICROBATCH_SIZE = 2
 NUM_MICROBATCHES = 800
@@ -25,9 +25,7 @@ NUM_CHANNELS = 3
 x_train = x_train[:49600]
 y_train = np.squeeze(y_train[:49600])
 
-# FIXME ugly hack to avoid evaluating val in batches
-x_val = x_val[:3000]
-y_val = np.squeeze(y_val[:3000])
+y_val = np.squeeze(y_val);
 
 # Normalize and reshape data and labels
 x_train, x_val = \
@@ -45,7 +43,7 @@ rmax = tf.placeholder(tf.float32, [])
 dmax = tf.placeholder(tf.float32, [])
 
 # Make model
-predictions, loss, train_step, accuracy = InceptionV3(
+predictions, loss, train_step, accuracy = make_conv_net(
     images,
     labels,
     training,
@@ -99,15 +97,18 @@ for i in range(NUM_EPOCHS):
     print('Train loss: {} - Train accuracy: {}'.format(loss_, acc_))
 
     # Validation
-    loss_, acc_ = sess.run([loss, accuracy],
-                           feed_dict={images: x_val,
-                                      labels: y_val,
+    tacc = 0
+    for i in range(5):
+        loss_, acc_ = sess.run([loss, accuracy],
+                           feed_dict={images: x_val[i*2000:i*2000+2000],
+                                      labels: y_val[i*2000:i*2000+2000],
                                       rmax: get_rmax(i),  # Ignored since
                                       dmax: get_dmax(i),  # training=False
                                       training: False})
-    accs.append(acc_)
+        tacc = tacc + (acc_/5.0)
+    accs.append(tacc)
 
-    print('Validation loss: {} - Validation accuracy: {}'.format(loss_, acc_))
+    print('Validation loss: {} - Validation accuracy: {}'.format(loss_, tacc))
 
 df = pd.DataFrame(data=accs,
                   columns=['Validation Accuracy'])
