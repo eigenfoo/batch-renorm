@@ -1,11 +1,11 @@
 # Batch Renormalization
 
-A Tensorflow implementation of batch renormalization, first introduced by Sergey
+A Tensorflow implementation of batch renormalization, first introduced by S
 Ioffe.
 
 Paper:
     Batch Renormalization: Towards Reducing Minibatch Dependence in
-        Batch-Normalized Models, Sergey Ioffe
+        Batch-Normalized Models, S Ioffe
     http://ee.cooper.edu/~curro/cgml/week4/paper10.pdf
 
 GitHub repository:
@@ -29,7 +29,7 @@ Below is our reproduction:
 
 ## Citations
 
-The [original batch renormalization paper by Sergey
+The [original batch renormalization paper by S
 Ioffe](https://arxiv.org/abs/1702.03275) (**arXiv:1702.03275 [cs.LG]**).
 
 ## Description

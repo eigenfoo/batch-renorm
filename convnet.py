@@ -5,7 +5,7 @@ tldr: Reproduce a subset of the results of a contemporary research paper.
 
 Paper:
     Batch Renormalization: Towards Reducing Minibatch Dependence in
-        Batch-Normalized Models, Sergey Ioffe
+        Batch-Normalized Models, S Ioffe
     http://ee.cooper.edu/~curro/cgml/week4/paper10.pdf
 
 GitHub repository:
