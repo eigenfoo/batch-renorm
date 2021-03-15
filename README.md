@@ -3,12 +3,12 @@
 A Tensorflow implementation of batch renormalization, first introduced by Sergey
 Ioffe.
 
-Paper:
+**Paper:**
     Batch Renormalization: Towards Reducing Minibatch Dependence in
         Batch-Normalized Models, Sergey Ioffe
-    http://ee.cooper.edu/~curro/cgml/week4/paper10.pdf
+    https://arxiv.org/abs/1702.03275
 
-GitHub repository:
+**GitHub repository:**
     https://github.com/eigenfoo/batch-renorm
 
 The goal of this project is to reproduce the following figure from the paper:
@@ -26,11 +26,6 @@ Below is our reproduction:
     <img style="float: middle" src="https://raw.githubusercontent.com/eigenfoo/batch-renorm/master/results/figure.png">
     </a>
 </figure>
-
-## Citations
-
-The [original batch renormalization paper by Sergey
-Ioffe](https://arxiv.org/abs/1702.03275) (**arXiv:1702.03275 [cs.LG]**).
 
 ## Description
 
